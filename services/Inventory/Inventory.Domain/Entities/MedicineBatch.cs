@@ -1,6 +1,6 @@
 namespace Inventory.Domain.Entities;
 
-public class MedicineBatch
+public class MedicineBatch : BaseData
 {
     public Guid Id { get; set; }
     public string BatchNumber { get; set; } = string.Empty; 
