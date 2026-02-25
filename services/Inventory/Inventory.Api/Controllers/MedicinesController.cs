@@ -1,5 +1,7 @@
 using Inventory.Application.DTOs.MedicineBatches;
 using Inventory.Application.Medicines.Create;
+using Inventory.Application.Medicines.Update;
+using Inventory.Application.MedicineBatches.Update;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -39,6 +41,18 @@ public class MedicinesController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateMedicineCommand command)
+    {
+        if (id != command.Id)
+        {
+            return BadRequest("ID trong route không khớp với ID trong body");
+        }
+
+        var result = await _sender.Send(command);
+        return Ok(result);
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
@@ -68,6 +82,19 @@ public class MedicinesController : ControllerBase
         var result = await _sender.Send(new GetMedicineBatchesQuery());
         return Ok(result);
     }
+
+    [HttpPut("batches/{id:guid}")]
+    public async Task<IActionResult> UpdateBatch(Guid id, [FromBody] UpdateMedicineBatchCommand command)
+    {
+        if (id != command.BatchId)
+        {
+            return BadRequest("ID trong route không khớp với ID trong body");
+        }
+
+        var result = await _sender.Send(command);
+        return Ok(result);
+    }
+
     [HttpDelete("batches/{id:guid}")]
     public async Task<IActionResult> DeleteBatch(Guid id)
     {
