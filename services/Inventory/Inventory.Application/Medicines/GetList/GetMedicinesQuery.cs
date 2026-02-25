@@ -13,8 +13,6 @@ public class GetMedicinesHandler : IRequestHandler<GetMedicinesQuery, List<Medic
 
     public async Task<List<MedicineDto>> Handle(GetMedicinesQuery request, CancellationToken ct)
     {
-        return await _context.Medicines
-            .Select(m => new MedicineDto(m.Id, m.Name, m.SKU, m.Unit))
-            .ToListAsync(ct);
+        return await _context.Medicines.Select(m => new MedicineDto(m.Id, m.Name, m.SKU, m.Unit)).ToListAsync(ct);
     }
 }

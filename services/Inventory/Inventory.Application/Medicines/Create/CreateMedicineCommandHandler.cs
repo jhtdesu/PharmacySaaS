@@ -16,7 +16,6 @@ internal sealed class CreateMedicineCommandHandler
 
     public async Task<Guid> Handle(CreateMedicineCommand request, CancellationToken cancellationToken)
     {
-        // 1. Khởi tạo Entity từ Request
         var medicine = new Medicine
         {
             Id = Guid.NewGuid(),
@@ -26,11 +25,9 @@ internal sealed class CreateMedicineCommandHandler
             Unit = request.Unit
         };
 
-        // 2. Lưu vào Database
         _context.Medicines.Add(medicine);
         await _context.SaveChangesAsync(cancellationToken);
 
-        // 3. Trả về kết quả
         return medicine.Id;
     }
 }

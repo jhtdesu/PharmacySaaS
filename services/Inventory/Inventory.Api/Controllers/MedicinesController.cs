@@ -1,3 +1,4 @@
+using Inventory.Api.DTOs;
 using Inventory.Application.Medicines.Create;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -26,6 +27,12 @@ public class MedicinesController : ControllerBase
     public async Task<IActionResult> GetAll()
     {
         var result = await _sender.Send(new GetMedicinesQuery());
+        return Ok(result);
+    }
+    [HttpPost("{id:guid}/batches")]
+    public async Task<IActionResult> CreateBatch(Guid id, [FromBody] CreateMedicineBatchRequest request)
+    {
+        var result = await _sender.Send(request);
         return Ok(result);
     }
 }
