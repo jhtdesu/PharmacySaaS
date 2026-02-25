@@ -1,4 +1,4 @@
-namespace Inventory.Api.DTOs;
+namespace Inventory.Application.DTOs.MedicineBatches;
 
 public record CreateMedicineBatchRequest(
     string BatchNumber,

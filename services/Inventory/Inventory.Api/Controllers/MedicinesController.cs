@@ -1,4 +1,4 @@
-using Inventory.Api.DTOs;
+using Inventory.Application.DTOs.MedicineBatches;
 using Inventory.Application.Medicines.Create;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -23,16 +23,41 @@ public class MedicinesController : ControllerBase
         
         return Ok(result); 
     }
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id)
+    {
+        var result = await _sender.Send(new GetMedicineByIdQuery(id));
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
         var result = await _sender.Send(new GetMedicinesQuery());
         return Ok(result);
     }
+
     [HttpPost("{id:guid}/batches")]
     public async Task<IActionResult> CreateBatch(Guid id, [FromBody] CreateMedicineBatchRequest request)
     {
         var result = await _sender.Send(request);
+        return Ok(result);
+    }
+
+    [HttpGet("{id:guid}/batches")]
+    public async Task<IActionResult> GetBatchesByMedicineId(Guid id)
+    {
+        var result = await _sender.Send(new GetMedicineBatchByIdQuery(id));
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
+    [HttpGet("batches")]
+    public async Task<IActionResult> GetAllBatches()
+    {
+        var result = await _sender.Send(new GetMedicineBatchesQuery());
         return Ok(result);
     }
 }

@@ -1,6 +1,7 @@
 using Inventory.Infrastructure;
 using Inventory.Application;
 using Microsoft.EntityFrameworkCore;
+using Inventory.Api.Middlewares;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +19,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 
 var app = builder.Build();
 
@@ -26,6 +30,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
+app.UseExceptionHandler();
 app.MapControllers();
 
 app.Run();

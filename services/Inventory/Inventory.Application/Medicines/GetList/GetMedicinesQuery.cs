@@ -1,18 +1,17 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Inventory.Application.Common.Interfaces;
+using Inventory.Application.DTOs.Medicines;
 
-public record GetMedicinesQuery() : IRequest<List<MedicineDto>>;
+public record GetMedicinesQuery() : IRequest<List<MedicineDTO>>;
 
-public record MedicineDto(Guid Id, string Name, string SKU, string Unit);
-
-public class GetMedicinesHandler : IRequestHandler<GetMedicinesQuery, List<MedicineDto>>
+public class GetMedicinesHandler : IRequestHandler<GetMedicinesQuery, List<MedicineDTO>>
 {
     private readonly IInventoryDbContext _context;
     public GetMedicinesHandler(IInventoryDbContext context) => _context = context;
 
-    public async Task<List<MedicineDto>> Handle(GetMedicinesQuery request, CancellationToken ct)
+    public async Task<List<MedicineDTO>> Handle(GetMedicinesQuery request, CancellationToken ct)
     {
-        return await _context.Medicines.Select(m => new MedicineDto(m.Id, m.Name, m.SKU, m.Unit)).ToListAsync(ct);
+        return await _context.Medicines.Select(m => new MedicineDTO(m.Id, m.Name, m.SKU, m.Unit)).ToListAsync(ct);
     }
 }
