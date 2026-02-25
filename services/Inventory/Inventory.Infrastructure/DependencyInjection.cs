@@ -15,7 +15,7 @@ public static class DependencyInjection
                 b => b.MigrationsAssembly(typeof(InventoryDbContext).Assembly.FullName)));
 
         // 2. Đăng ký Interface (Cầu nối giữa Application và Infrastructure)
-        // Lưu ý: Sử dụng IInventoryDbContext thay vì IApplicationDbContext như bạn đã đổi tên
+        // Lưu ý: Sử dụng IInventoryDbContext thay vì IInventoryDbContext như bạn đã đổi tên
         services.AddScoped<IInventoryDbContext>(provider => 
             provider.GetRequiredService<InventoryDbContext>());
 
