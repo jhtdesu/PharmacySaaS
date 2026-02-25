@@ -39,6 +39,14 @@ public class MedicinesController : ControllerBase
         return Ok(result);
     }
 
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var result = await _sender.Send(new DeleteMedicineRequest(id));
+        if (!result) return NotFound();
+        return NoContent();
+    }
+
     [HttpPost("{id:guid}/batches")]
     public async Task<IActionResult> CreateBatch(Guid id, [FromBody] CreateMedicineBatchRequest request)
     {
@@ -59,5 +67,12 @@ public class MedicinesController : ControllerBase
     {
         var result = await _sender.Send(new GetMedicineBatchesQuery());
         return Ok(result);
+    }
+    [HttpDelete("batches/{id:guid}")]
+    public async Task<IActionResult> DeleteBatch(Guid id)
+    {
+        var result = await _sender.Send(new DeleteMedicineBatchRequest(id));
+        if (!result) return NotFound();
+        return NoContent();
     }
 }
