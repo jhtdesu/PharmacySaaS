@@ -1,6 +1,13 @@
 using Inventory.Application.DTOs.MedicineBatches;
 using Inventory.Application.Medicines.Create;
+using Inventory.Application.Medicines.Delete;
+using Inventory.Application.Medicines.GetById;
+using Inventory.Application.Medicines.GetList;
 using Inventory.Application.Medicines.Update;
+using Inventory.Application.MedicineBatches.Create;
+using Inventory.Application.MedicineBatches.Delete;
+using Inventory.Application.MedicineBatches.GetById;
+using Inventory.Application.MedicineBatches.GetList;
 using Inventory.Application.MedicineBatches.Update;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -56,7 +63,7 @@ public class MedicinesController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var result = await _sender.Send(new DeleteMedicineRequest(id));
+        var result = await _sender.Send(new DeleteMedicineCommand(id));
         if (!result) return NotFound();
         return NoContent();
     }
@@ -64,7 +71,13 @@ public class MedicinesController : ControllerBase
     [HttpPost("{id:guid}/batches")]
     public async Task<IActionResult> CreateBatch(Guid id, [FromBody] CreateMedicineBatchRequest request)
     {
-        var result = await _sender.Send(request);
+        var command = new CreateMedicineBatchCommand(
+            id,
+            request.BatchNumber,
+            request.ExpiryDate,
+            request.Quantity
+        );
+        var result = await _sender.Send(command);
         return Ok(result);
     }
 
@@ -98,7 +111,7 @@ public class MedicinesController : ControllerBase
     [HttpDelete("batches/{id:guid}")]
     public async Task<IActionResult> DeleteBatch(Guid id)
     {
-        var result = await _sender.Send(new DeleteMedicineBatchRequest(id));
+        var result = await _sender.Send(new DeleteMedicineBatchCommand(id));
         if (!result) return NotFound();
         return NoContent();
     }
