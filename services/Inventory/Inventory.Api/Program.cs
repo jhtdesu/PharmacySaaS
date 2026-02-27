@@ -1,20 +1,16 @@
 using Inventory.Infrastructure;
 using Inventory.Application;
-using Microsoft.EntityFrameworkCore;
+using Inventory.Application.Common.Interfaces;
+using Inventory.Api.Services;
 using Inventory.Api.Middlewares;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
-builder.Services.AddDbContext<InventoryDbContext>(options =>
-    options.UseNpgsql(connectionString, b => 
-        b.MigrationsAssembly("Inventory.Infrastructure"))); 
-
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

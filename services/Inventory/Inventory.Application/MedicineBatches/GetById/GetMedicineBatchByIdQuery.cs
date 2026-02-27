@@ -3,12 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using Inventory.Application.Common.Interfaces;
 using Inventory.Application.DTOs.MedicineBatches;
 
+namespace Inventory.Application.MedicineBatches.GetById;
+
 public record GetMedicineBatchByIdQuery(Guid Id) : IRequest<MedicineBatchDTO?>;
 
-public class GetMedicineBatchByIdHandler : IRequestHandler<GetMedicineBatchByIdQuery, MedicineBatchDTO?>
+public class GetMedicineBatchByIdQueryHandler : IRequestHandler<GetMedicineBatchByIdQuery, MedicineBatchDTO?>
 {
     private readonly IInventoryDbContext _context;
-    public GetMedicineBatchByIdHandler(IInventoryDbContext context) => _context = context;
+    public GetMedicineBatchByIdQueryHandler(IInventoryDbContext context) => _context = context;
 
     public async Task<MedicineBatchDTO?> Handle(GetMedicineBatchByIdQuery request, CancellationToken ct)
     {

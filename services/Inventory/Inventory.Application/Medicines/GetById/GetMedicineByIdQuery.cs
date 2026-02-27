@@ -3,12 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using Inventory.Application.Common.Interfaces;
 using Inventory.Application.DTOs.Medicines;
 
+namespace Inventory.Application.Medicines.GetById;
+
 public record GetMedicineByIdQuery(Guid Id) : IRequest<MedicineDTO?>;
 
-public class GetMedicineByIdHandler : IRequestHandler<GetMedicineByIdQuery, MedicineDTO?>
+public class GetMedicineByIdQueryHandler : IRequestHandler<GetMedicineByIdQuery, MedicineDTO?>
 {
     private readonly IInventoryDbContext _context;
-    public GetMedicineByIdHandler(IInventoryDbContext context) => _context = context;
+    public GetMedicineByIdQueryHandler(IInventoryDbContext context) => _context = context;
 
     public async Task<MedicineDTO?> Handle(GetMedicineByIdQuery request, CancellationToken ct)
     {
