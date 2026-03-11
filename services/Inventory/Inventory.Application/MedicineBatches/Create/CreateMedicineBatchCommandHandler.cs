@@ -26,7 +26,6 @@ internal sealed class CreateMedicineBatchCommandHandler
             throw new Exception($"Không tìm thấy thuốc với ID: {request.MedicineId}");
         }
 
-        // 2. Khởi tạo Entity Lô hàng
         var batch = new MedicineBatch
         {
             Id = Guid.NewGuid(),
@@ -36,7 +35,6 @@ internal sealed class CreateMedicineBatchCommandHandler
             OriginalQuantity = request.Quantity
         };
 
-        // 3. Lưu vào Database
         _context.Batches.Add(batch);
         await _context.SaveChangesAsync(cancellationToken);
 
