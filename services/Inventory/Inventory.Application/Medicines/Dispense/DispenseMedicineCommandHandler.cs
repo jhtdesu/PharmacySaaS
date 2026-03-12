@@ -1,4 +1,5 @@
 using Inventory.Application.Common.Interfaces;
+using Inventory.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,19 +35,33 @@ public class DispenseMedicineCommandHandler : IRequestHandler<DispenseMedicineCo
         {
             if (remainingToDispense == 0) break;
 
+            int quantityDeducted = 0;
             if (batch.CurrentQuantity >= remainingToDispense)
             {
+                quantityDeducted = remainingToDispense;
                 batch.CurrentQuantity -= remainingToDispense;
                 remainingToDispense = 0;
             }
             else
             {
+                quantityDeducted = batch.CurrentQuantity;
                 remainingToDispense -= batch.CurrentQuantity;
                 batch.CurrentQuantity = 0;
             }
+
+            var transaction = new InventoryTransaction
+            {
+                Id = Guid.NewGuid(),
+                MedicineId = request.MedicineId,
+                MedicineBatchId = batch.Id,
+                Type = TransactionType.Dispense,
+                QuantityChange = -quantityDeducted, 
+                TransactionDate = DateTime.UtcNow,
+                ReferenceNote = "System Dispense" 
+            };
+            _context.InventoryTransactions.Add(transaction);
         }
 
-        // 4. Save changes
         await _context.SaveChangesAsync(cancellationToken);
     }
 }
