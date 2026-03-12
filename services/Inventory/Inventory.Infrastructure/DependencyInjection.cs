@@ -13,9 +13,7 @@ public static class DependencyInjection
             options.UseNpgsql(
                 configuration.GetConnectionString("DefaultConnection"),
                 b => b.MigrationsAssembly(typeof(InventoryDbContext).Assembly.FullName)));
-
-        // 2. Đăng ký Interface (Cầu nối giữa Application và Infrastructure)
-        // Lưu ý: Sử dụng IInventoryDbContext thay vì IInventoryDbContext như bạn đã đổi tên
+                
         services.AddScoped<IInventoryDbContext>(provider => 
             provider.GetRequiredService<InventoryDbContext>());
 
