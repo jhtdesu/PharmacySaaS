@@ -1,3 +1,5 @@
+using Inventory.Application.Common.Models;
+using Inventory.Application.DTOs.Medicines;
 using Inventory.Application.Medicines.Create;
 using Inventory.Application.Medicines.Delete;
 using Inventory.Application.Medicines.Dispense;
@@ -37,9 +39,9 @@ public class MedicinesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<PagedResponse<List<MedicineDTO>>>> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
-        var result = await _sender.Send(new GetMedicinesQuery());
+        var result = await _sender.Send(new GetMedicinesQuery(pageNumber, pageSize));
         return Ok(result);
     }
 
@@ -68,5 +70,14 @@ public class MedicinesController : ControllerBase
     {
         await _sender.Send(command);
         return Ok();
+    }
+
+    [HttpGet("with-stock")]
+    public async Task<ActionResult<PagedResponse<List<MedicineWithStockDto>>>> GetList([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    {
+        var query = new GetMedicinesWithStockQuery(pageNumber, pageSize);
+        var result = await _sender.Send(query);
+        
+        return Ok(result);
     }
 }

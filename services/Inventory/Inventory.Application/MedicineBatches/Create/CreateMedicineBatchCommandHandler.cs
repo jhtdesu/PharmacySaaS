@@ -31,8 +31,10 @@ internal sealed class CreateMedicineBatchCommandHandler
             Id = Guid.NewGuid(),
             MedicineId = request.MedicineId,
             BatchNumber = request.BatchNumber,
+            ImportDate = DateTime.Now.ToUniversalTime(),
             ExpiryDate = request.ExpiryDate.ToUniversalTime(), 
-            OriginalQuantity = request.Quantity
+            OriginalQuantity = request.Quantity,
+            CurrentQuantity = request.Quantity,
         };
 
         _context.Batches.Add(batch);
