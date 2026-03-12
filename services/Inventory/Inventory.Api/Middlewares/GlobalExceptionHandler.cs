@@ -51,7 +51,16 @@ public class GlobalExceptionHandler : IExceptionHandler
                 Detail = invalidOperationException.Message
             };
         }
-        else
+        else if (exception is UnauthorizedAccessException unauthorizedAccessException)
+        {
+            problemDetails = new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Không có quyền truy cập",
+                Detail = unauthorizedAccessException.Message
+            };
+        }
+        else       
         {
             problemDetails = new ProblemDetails
             {
