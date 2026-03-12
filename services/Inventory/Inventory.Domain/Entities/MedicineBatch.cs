@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Inventory.Domain.Entities;
 
 public class MedicineBatch : BaseData
@@ -8,6 +10,7 @@ public class MedicineBatch : BaseData
     public DateTime ImportDate { get; set; } 
     
     public int OriginalQuantity { get; set; } 
+    [ConcurrencyCheck]
     public int CurrentQuantity { get; set; }  
     
     public decimal PurchasePrice { get; set; } 
