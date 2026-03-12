@@ -18,7 +18,6 @@ public class MedicineBatch : BaseData
     public Guid MedicineId { get; set; }
     public Medicine Medicine { get; set; } = null!;
     
-    // -- Expiry Validation -- 
     public bool IsExpiringSoon(int months = 3) 
     {
         return ExpiryDate <= DateTime.UtcNow.AddMonths(months);
