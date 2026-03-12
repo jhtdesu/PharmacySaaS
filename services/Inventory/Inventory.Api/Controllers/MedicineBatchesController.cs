@@ -1,4 +1,5 @@
 using Inventory.Application.DTOs.MedicineBatches;
+using Inventory.Application.Common.Models;
 using Inventory.Application.MedicineBatches.Create;
 using Inventory.Application.MedicineBatches.Delete;
 using Inventory.Application.MedicineBatches.GetById;
@@ -42,9 +43,9 @@ public class MedicineBatchesController : ControllerBase
     }
 
     [HttpGet("batches")]
-    public async Task<IActionResult> GetAllBatches()
+    public async Task<ActionResult<PagedResponse<List<MedicineBatchDTO>>>> GetAllBatches([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
-        var result = await _sender.Send(new GetMedicineBatchesQuery());
+        var result = await _sender.Send(new GetMedicineBatchesQuery(pageNumber, pageSize));
         return Ok(result);
     }
 
