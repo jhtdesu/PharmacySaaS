@@ -1,4 +1,4 @@
-namespace Inventory.Application.Common.Models;
+namespace Shared.Contracts.Models;
 
 public class PagedResponse<T> : BaseResponse<T>
 {

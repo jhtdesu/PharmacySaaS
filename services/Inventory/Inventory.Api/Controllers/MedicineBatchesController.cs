@@ -1,5 +1,5 @@
 using Inventory.Application.DTOs.MedicineBatches;
-using Inventory.Application.Common.Models;
+using Shared.Contracts.Models;
 using Inventory.Application.MedicineBatches.Create;
 using Inventory.Application.MedicineBatches.Delete;
 using Inventory.Application.MedicineBatches.GetById;

@@ -1,4 +1,4 @@
-using Inventory.Application.Common.Models;
+using Shared.Contracts.Models;
 using Inventory.Application.DTOs.Medicines;
 using Inventory.Application.Medicines.Create;
 using Inventory.Application.Medicines.Delete;
