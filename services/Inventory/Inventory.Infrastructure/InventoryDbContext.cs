@@ -10,6 +10,7 @@ public class InventoryDbContext : DbContext, IInventoryDbContext
 
     public DbSet<Medicine> Medicines => Set<Medicine>();
     public DbSet<MedicineBatch> Batches => Set<MedicineBatch>();
+    public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
