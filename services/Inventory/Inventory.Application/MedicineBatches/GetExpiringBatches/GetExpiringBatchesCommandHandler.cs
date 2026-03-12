@@ -6,7 +6,7 @@ using Inventory.Application.Common.Interfaces;
 
 namespace Inventory.Application.MedicineBatches.Queries.GetExpiringBatches;
 
-public class GetExpiringBatchesQueryHandler : IRequestHandler<GetExpiringBatchesQuery, BaseResponse<List<ExpiringBatchDTO>>>
+public class GetExpiringBatchesQueryHandler : IRequestHandler<GetExpiringBatchesQuery, PagedResponse<List<ExpiringBatchDTO>>>
 {
     private readonly IInventoryDbContext _context;
 
@@ -15,15 +15,21 @@ public class GetExpiringBatchesQueryHandler : IRequestHandler<GetExpiringBatches
         _context = context;
     }
 
-    public async Task<BaseResponse<List<ExpiringBatchDTO>>> Handle(GetExpiringBatchesQuery request, CancellationToken cancellationToken)
+    public async Task<PagedResponse<List<ExpiringBatchDTO>>> Handle(GetExpiringBatchesQuery request, CancellationToken cancellationToken)
     {
         var expiryThreshold = DateTime.UtcNow.AddDays(request.DaysThreshold);
 
-        var expiringBatches = await _context.Batches
+        var query = _context.Batches
             .AsNoTracking()
-            .Include(b => b.Medicine) 
+            .Include(b => b.Medicine)
             .Where(b => b.CurrentQuantity > 0 && b.ExpiryDate <= expiryThreshold)
-            .OrderBy(b => b.ExpiryDate) 
+            .OrderBy(b => b.ExpiryDate);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var items = await query
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
             .Select(b => new ExpiringBatchDTO
             {
                 BatchId = b.Id,
@@ -34,6 +40,11 @@ public class GetExpiringBatchesQueryHandler : IRequestHandler<GetExpiringBatches
             })
             .ToListAsync(cancellationToken);
 
-        return new BaseResponse<List<ExpiringBatchDTO>>(expiringBatches, "Expiring batches retrieved successfully.");
+        return new PagedResponse<List<ExpiringBatchDTO>>(
+            items,
+            request.PageNumber,
+            request.PageSize,
+            totalCount
+        );
     }
 }
