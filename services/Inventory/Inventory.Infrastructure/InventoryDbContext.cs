@@ -16,5 +16,14 @@ public class InventoryDbContext : DbContext, IInventoryDbContext
         base.OnModelCreating(modelBuilder);
         
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(InventoryDbContext).Assembly);
+
+        modelBuilder.Entity<InventoryTransaction>().HasQueryFilter(t => 
+        !t.IsDeleted);
+
+        modelBuilder.Entity<InventoryTransaction>()
+        .HasOne(t => t.MedicineBatch)
+        .WithMany()
+        .HasForeignKey(t => t.MedicineBatchId)
+        .OnDelete(DeleteBehavior.Restrict);
     }
 }
