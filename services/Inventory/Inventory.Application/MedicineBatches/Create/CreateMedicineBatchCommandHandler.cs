@@ -37,7 +37,19 @@ internal sealed class CreateMedicineBatchCommandHandler
             CurrentQuantity = request.Quantity,
         };
 
+        var transaction = new InventoryTransaction
+        {
+            Id = Guid.NewGuid(),
+            MedicineId = batch.MedicineId,
+            MedicineBatchId = batch.Id,
+            Type = TransactionType.Receive, 
+            QuantityChange = request.Quantity,
+            TransactionDate = DateTime.UtcNow.ToUniversalTime(),
+            ReferenceNote = $"Stock received for new batch: {batch.BatchNumber}"
+        };
+
         _context.Batches.Add(batch);
+        _context.InventoryTransactions.Add(transaction);
         await _context.SaveChangesAsync(cancellationToken);
 
         return batch.Id;
