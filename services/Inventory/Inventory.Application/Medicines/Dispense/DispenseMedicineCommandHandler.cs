@@ -62,6 +62,13 @@ public class DispenseMedicineCommandHandler : IRequestHandler<DispenseMedicineCo
             _context.InventoryTransactions.Add(transaction);
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {   
+            throw new Exception("Inventory was modified by another user while processing this request. Please try dispensing again.");
+        }
     }
 }
