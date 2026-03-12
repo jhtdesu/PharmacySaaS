@@ -9,11 +9,13 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Inventory.Application.MedicineBatches.Queries.GetExpiringBatches;
 using Inventory.Application.MedicineBatches.Commands.AdjustStock;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Inventory.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class MedicineBatchesController : ControllerBase
 {
     private readonly ISender _sender; 

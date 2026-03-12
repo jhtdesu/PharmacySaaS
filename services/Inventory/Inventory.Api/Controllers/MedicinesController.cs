@@ -9,11 +9,13 @@ using Inventory.Application.Medicines.Update;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Inventory.Application.Medicines.Queries.GetLowStock;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Inventory.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class MedicinesController : ControllerBase
 {
     private readonly ISender _sender; 
