@@ -8,6 +8,7 @@ using Inventory.Application.MedicineBatches.Update;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Inventory.Application.MedicineBatches.Queries.GetExpiringBatches;
+using Inventory.Application.MedicineBatches.Commands.AdjustStock;
 
 namespace Inventory.Api.Controllers;
 
@@ -78,4 +79,16 @@ public class MedicineBatchesController : ControllerBase
         
         return Ok(result);
     }
+
+    [HttpPost("{id}/adjust")]
+    public async Task<ActionResult<BaseResponse<bool>>> AdjustStock(Guid id, [FromBody] AdjustStockRequest request)
+    {
+        var command = new AdjustStockCommand(id, request.QuantityToDeduct, request.Reason);
+        var result = await _sender.Send(command);
+        
+        if (!result.Success) return BadRequest(result);
+        return Ok(result);
+    }
+
+    public record AdjustStockRequest(int QuantityToDeduct, string Reason);
 }
