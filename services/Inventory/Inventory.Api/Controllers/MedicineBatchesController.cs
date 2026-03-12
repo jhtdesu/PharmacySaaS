@@ -72,11 +72,10 @@ public class MedicineBatchesController : ControllerBase
     }
 
     [HttpGet("expiring")]
-    public async Task<ActionResult<BaseResponse<List<ExpiringBatchDTO>>>> GetExpiringBatches([FromQuery] int daysThreshold = 90)
+    public async Task<ActionResult<PagedResponse<List<ExpiringBatchDTO>>>> GetExpiringBatches([FromQuery] int daysThreshold = 90, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
-        var query = new GetExpiringBatchesQuery(daysThreshold);
+        var query = new GetExpiringBatchesQuery(daysThreshold, pageNumber, pageSize);
         var result = await _sender.Send(query);
-        
         return Ok(result);
     }
 

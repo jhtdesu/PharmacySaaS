@@ -8,6 +8,7 @@ using Inventory.Application.Medicines.GetList;
 using Inventory.Application.Medicines.Update;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Inventory.Application.Medicines.Queries.GetLowStock;
 
 namespace Inventory.Api.Controllers;
 
@@ -76,6 +77,15 @@ public class MedicinesController : ControllerBase
     public async Task<ActionResult<PagedResponse<List<MedicineWithStockDTO>>>> GetList([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
         var query = new GetMedicinesWithStockQuery(pageNumber, pageSize);
+        var result = await _sender.Send(query);
+        
+        return Ok(result);
+    }
+
+    [HttpGet("low-stock")]
+    public async Task<ActionResult<PagedResponse<List<LowStockMedicineDTO>>>> GetLowStockMedicines([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    {
+        var query = new GetLowStockMedicinesQuery(pageNumber, pageSize);
         var result = await _sender.Send(query);
         
         return Ok(result);
