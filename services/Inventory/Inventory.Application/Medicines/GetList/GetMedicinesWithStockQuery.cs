@@ -2,7 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Inventory.Application.Common.Interfaces;
 using Inventory.Application.DTOs.Medicines;
-using Inventory.Application.Common.Models;
+using Shared.Contracts.Models;
 
 namespace Inventory.Application.Medicines.GetList;
 
