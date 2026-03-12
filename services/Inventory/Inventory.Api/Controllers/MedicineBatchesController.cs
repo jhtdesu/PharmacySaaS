@@ -7,6 +7,7 @@ using Inventory.Application.MedicineBatches.GetList;
 using Inventory.Application.MedicineBatches.Update;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Inventory.Application.MedicineBatches.Queries.GetExpiringBatches;
 
 namespace Inventory.Api.Controllers;
 
@@ -67,5 +68,14 @@ public class MedicineBatchesController : ControllerBase
         var result = await _sender.Send(new DeleteMedicineBatchCommand(id));
         if (!result) return NotFound();
         return NoContent();
+    }
+
+    [HttpGet("expiring")]
+    public async Task<ActionResult<BaseResponse<List<ExpiringBatchDTO>>>> GetExpiringBatches([FromQuery] int daysThreshold = 90)
+    {
+        var query = new GetExpiringBatchesQuery(daysThreshold);
+        var result = await _sender.Send(query);
+        
+        return Ok(result);
     }
 }

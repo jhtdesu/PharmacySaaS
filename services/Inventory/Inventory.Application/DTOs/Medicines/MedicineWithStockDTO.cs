@@ -1,6 +1,6 @@
 namespace Inventory.Application.DTOs.Medicines;
 
-public class MedicineWithStockDto
+public class MedicineWithStockDTO
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;

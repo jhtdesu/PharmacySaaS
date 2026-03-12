@@ -73,7 +73,7 @@ public class MedicinesController : ControllerBase
     }
 
     [HttpGet("with-stock")]
-    public async Task<ActionResult<PagedResponse<List<MedicineWithStockDto>>>> GetList([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    public async Task<ActionResult<PagedResponse<List<MedicineWithStockDTO>>>> GetList([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
         var query = new GetMedicinesWithStockQuery(pageNumber, pageSize);
         var result = await _sender.Send(query);
