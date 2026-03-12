@@ -6,16 +6,16 @@ using Shared.Contracts.Models;
 
 namespace Inventory.Application.Medicines.GetList;
 
-public record GetMedicinesWithStockQuery(int PageNumber = 1, int PageSize = 10) : IRequest<PagedResponse<List<MedicineWithStockDto>>>;
+public record GetMedicinesWithStockQuery(int PageNumber = 1, int PageSize = 10) : IRequest<PagedResponse<List<MedicineWithStockDTO>>>;
 
-public class GetMedicinesWithStockQueryHandler : IRequestHandler<GetMedicinesWithStockQuery, PagedResponse<List<MedicineWithStockDto>>>
+public class GetMedicinesWithStockQueryHandler : IRequestHandler<GetMedicinesWithStockQuery, PagedResponse<List<MedicineWithStockDTO>>>
 {
     private readonly IInventoryDbContext _context;
     public GetMedicinesWithStockQueryHandler(IInventoryDbContext context) => _context = context;
 
-    public async Task<PagedResponse<List<MedicineWithStockDto>>> Handle(GetMedicinesWithStockQuery request, CancellationToken ct)
+    public async Task<PagedResponse<List<MedicineWithStockDTO>>> Handle(GetMedicinesWithStockQuery request, CancellationToken ct)
     {
-        var medicines = await _context.Medicines.Select(m => new MedicineWithStockDto
+        var medicines = await _context.Medicines.Select(m => new MedicineWithStockDTO
         {
             Id = m.Id,
             Name = m.Name,
@@ -26,6 +26,6 @@ public class GetMedicinesWithStockQueryHandler : IRequestHandler<GetMedicinesWit
             EarliestExpiryDate = m.Batches.Where(b => b.CurrentQuantity > 0 && b.ExpiryDate > DateTime.UtcNow).Min(b => (DateTime?)b.ExpiryDate) 
         }).ToListAsync(ct);
 
-        return new PagedResponse<List<MedicineWithStockDto>>(medicines, request.PageNumber, request.PageSize, medicines.Count);
+        return new PagedResponse<List<MedicineWithStockDTO>>(medicines, request.PageNumber, request.PageSize, medicines.Count);
     }
 }
