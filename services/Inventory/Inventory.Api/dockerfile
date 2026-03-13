@@ -1,0 +1,16 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copy everything and restore dependencies
+COPY . .
+RUN dotnet restore "Inventory/Inventory.Api/Inventory.Api.csproj"
+RUN dotnet publish "Inventory/Inventory.Api/Inventory.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+# Create the final lightweight runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+
+# .NET 8 runs on port 8080 by default inside the container
+EXPOSE 8080 
+ENTRYPOINT ["dotnet", "Inventory.Api.dll"]

@@ -1,0 +1,18 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copy everything and restore dependencies
+COPY . .
+RUN dotnet restore "Auth/Auth.Api/Auth.Api.csproj"
+
+# Build and publish the release
+RUN dotnet publish "Auth/Auth.Api/Auth.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+# Create the final lightweight runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+
+# .NET 8 runs on port 8080 by default inside the container
+EXPOSE 8080 
+ENTRYPOINT ["dotnet", "Auth.Api.dll"]
