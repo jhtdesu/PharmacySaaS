@@ -10,6 +10,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Inventory.Application.Medicines.Queries.GetLowStock;
 using Microsoft.AspNetCore.Authorization;
+using Inventory.Application.Medicines.Checkout;
 
 namespace Inventory.Api.Controllers;
 
@@ -91,5 +92,19 @@ public class MedicinesController : ControllerBase
         var result = await _sender.Send(query);
         
         return Ok(result);
+    }
+
+    [HttpPost("checkout")]
+    public async Task<IActionResult> Checkout([FromBody] CheckoutCommand command)
+    {
+        try
+        {
+            var receiptNumber = await _sender.Send(command);
+            return Ok(new { Message = "Sale completed successfully.", ReceiptNumber = receiptNumber });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { Error = ex.Message });
+        }
     }
 }
