@@ -7,6 +7,8 @@ namespace Inventory.Infrastructure;
 public class InventoryDbContext : DbContext, IInventoryDbContext
 {
     private readonly ITenantService? _tenantService;
+    
+
     public InventoryDbContext(DbContextOptions<InventoryDbContext> options, ITenantService tenantService) 
         : base(options)
     {
@@ -15,9 +17,13 @@ public class InventoryDbContext : DbContext, IInventoryDbContext
 
     public InventoryDbContext(DbContextOptions<InventoryDbContext> options) : base(options) { }
 
+    public Guid CurrentTenantId => _tenantService?.GetCurrentTenantId() ?? Guid.Empty;
+
     public DbSet<Medicine> Medicines => Set<Medicine>();
     public DbSet<MedicineBatch> Batches => Set<MedicineBatch>();
     public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
+    public DbSet<Sale> Sales => Set<Sale>();
+    public DbSet<SaleItem> SaleItems => Set<SaleItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -25,27 +31,23 @@ public class InventoryDbContext : DbContext, IInventoryDbContext
         
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(InventoryDbContext).Assembly);
 
-        modelBuilder.Entity<InventoryTransaction>().HasQueryFilter(t => 
-        !t.IsDeleted);
-
-        modelBuilder.Entity<InventoryTransaction>()
-        .HasOne(t => t.MedicineBatch)
-        .WithMany()
-        .HasForeignKey(t => t.MedicineBatchId)
-        .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<InventoryTransaction>().HasQueryFilter(t => t.TenantId == CurrentTenantId && !t.IsDeleted);
+        modelBuilder.Entity<Sale>().HasQueryFilter(s => s.TenantId == CurrentTenantId && !s.IsDeleted);
+        modelBuilder.Entity<SaleItem>().HasQueryFilter(si => si.TenantId == CurrentTenantId && !si.IsDeleted);
     }
+
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-{
-    var tenantId = _tenantService?.GetCurrentTenantId();
-
-    foreach (var entry in ChangeTracker.Entries())
     {
-        if (entry.Entity is BaseData baseEntity && entry.State == EntityState.Added)
-        {
-            baseEntity.TenantId = tenantId.GetValueOrDefault();
-        }
-    }
+        var tenantId = _tenantService?.GetCurrentTenantId();
 
-    return await base.SaveChangesAsync(cancellationToken);
-}
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            if (entry.Entity is BaseData baseEntity && entry.State == EntityState.Added)
+            {
+                baseEntity.TenantId = tenantId.GetValueOrDefault();
+            }
+        }
+
+        return await base.SaveChangesAsync(cancellationToken);
+    }
 }
