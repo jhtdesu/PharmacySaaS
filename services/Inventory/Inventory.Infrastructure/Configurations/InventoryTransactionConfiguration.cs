@@ -9,5 +9,10 @@ public class InventoryTransactionConfiguration : IEntityTypeConfiguration<Invent
     public void Configure(EntityTypeBuilder<InventoryTransaction> builder)
     {
         builder.ToTable("InventoryTransaction");
+        builder
+        .HasOne(t => t.MedicineBatch)
+        .WithMany()
+        .HasForeignKey(t => t.MedicineBatchId)
+        .OnDelete(DeleteBehavior.Restrict);
     }
 }
