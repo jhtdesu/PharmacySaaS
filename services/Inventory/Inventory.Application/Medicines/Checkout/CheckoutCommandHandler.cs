@@ -8,10 +8,12 @@ namespace Inventory.Application.Medicines.Checkout;
 public class CheckoutCommandHandler : IRequestHandler<CheckoutCommand, string>
 {
     private readonly IInventoryDbContext _context;
+    private readonly ITenantService _tenantService;
 
-    public CheckoutCommandHandler(IInventoryDbContext context)
+    public CheckoutCommandHandler(IInventoryDbContext context, ITenantService tenantService)
     {
         _context = context;
+        _tenantService = tenantService;
     }
 
     public async Task<string> Handle(CheckoutCommand request, CancellationToken cancellationToken)
@@ -25,6 +27,7 @@ public class CheckoutCommandHandler : IRequestHandler<CheckoutCommand, string>
                 Id = Guid.NewGuid(),
                 ReceiptNumber = $"REC-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 5).ToUpper()}",
                 SaleDate = DateTime.UtcNow,
+                ProcessedBy = _tenantService.GetCurrentTenantId(),
                 TotalAmount = 0,
                 Items = new List<SaleItem>()
             };
