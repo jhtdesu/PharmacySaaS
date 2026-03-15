@@ -18,6 +18,7 @@ public class GetMedicinesQueryHandler : IRequestHandler<GetMedicinesQuery, Paged
         var totalRecords = await _context.Medicines.CountAsync(ct);
 
         var medicines = await _context.Medicines
+            .AsNoTracking()
             .OrderBy(m => m.Name)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)

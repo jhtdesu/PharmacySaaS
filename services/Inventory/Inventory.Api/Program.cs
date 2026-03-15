@@ -33,17 +33,6 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173") 
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials(); 
-    });
-});
-
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
 builder.Services.AddHttpContextAccessor();
@@ -76,8 +65,6 @@ builder.Services.AddProblemDetails();
 
 
 var app = builder.Build();
-
-app.UseCors("AllowFrontend");
 
 // Swagger 
 app.UseSwagger();

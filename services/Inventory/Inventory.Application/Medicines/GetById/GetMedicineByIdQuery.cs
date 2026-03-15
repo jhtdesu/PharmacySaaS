@@ -15,6 +15,7 @@ public class GetMedicineByIdQueryHandler : IRequestHandler<GetMedicineByIdQuery,
     public async Task<MedicineDTO?> Handle(GetMedicineByIdQuery request, CancellationToken ct)
     {
         return await _context.Medicines
+            .AsNoTracking()
             .Where(m => m.Id == request.Id)
             .Select(m => new MedicineDTO(m.Id, m.Name, m.SKU, m.Unit))
             .FirstOrDefaultAsync(ct);
