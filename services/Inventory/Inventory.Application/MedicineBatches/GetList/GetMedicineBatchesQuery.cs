@@ -18,6 +18,7 @@ public class GetMedicineBatchesQueryHandler : IRequestHandler<GetMedicineBatches
         var totalRecords = await _context.Batches.CountAsync(ct);
 
         var batches = await _context.Batches
+            .AsNoTracking()
             .OrderBy(b => b.ExpiryDate)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
