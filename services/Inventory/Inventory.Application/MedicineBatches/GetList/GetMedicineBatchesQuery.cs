@@ -19,6 +19,7 @@ public class GetMedicineBatchesQueryHandler : IRequestHandler<GetMedicineBatches
 
         var batches = await _context.Batches
             .AsNoTracking()
+            .Where(b => !b.IsDeleted)
             .OrderBy(b => b.ExpiryDate)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)

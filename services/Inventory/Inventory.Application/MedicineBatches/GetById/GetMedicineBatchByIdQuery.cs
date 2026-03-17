@@ -15,7 +15,7 @@ public class GetMedicineBatchByIdQueryHandler : IRequestHandler<GetMedicineBatch
     public async Task<MedicineBatchDTO?> Handle(GetMedicineBatchByIdQuery request, CancellationToken ct)
     {
         return await _context.Batches
-            .Where(mb => mb.Id == request.Id)
+            .Where(mb => mb.Id == request.Id && !mb.IsDeleted)
             .Select(mb => new MedicineBatchDTO(mb.Id, mb.BatchNumber, mb.ExpiryDate, mb.OriginalQuantity))
             .FirstOrDefaultAsync(ct);
     }
