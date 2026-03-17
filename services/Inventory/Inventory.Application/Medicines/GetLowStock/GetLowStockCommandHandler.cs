@@ -26,7 +26,7 @@ public class GetLowStockMedicinesQueryHandler : IRequestHandler<GetLowStockMedic
                 m.Unit,
                 m.LowStockLevel,
                 TotalStock = m.Batches
-                    .Where(b => b.CurrentQuantity > 0 && b.ExpiryDate > DateTime.UtcNow)
+                    .Where(b => b.CurrentQuantity > 0 && b.ExpiryDate > DateTime.UtcNow && !b.IsDeleted)
                     .Sum(b => b.CurrentQuantity)
             })
             .Where(m => m.TotalStock <= m.LowStockLevel)

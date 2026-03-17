@@ -19,6 +19,7 @@ public class GetMedicinesQueryHandler : IRequestHandler<GetMedicinesQuery, Paged
 
         var medicines = await _context.Medicines
             .AsNoTracking()
+            .Where(m => !m.IsDeleted)
             .OrderBy(m => m.Name)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)

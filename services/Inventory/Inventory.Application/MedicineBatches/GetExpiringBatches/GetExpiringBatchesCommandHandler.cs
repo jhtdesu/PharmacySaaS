@@ -21,6 +21,7 @@ public class GetExpiringBatchesQueryHandler : IRequestHandler<GetExpiringBatches
 
         var query = _context.Batches
             .AsNoTracking()
+            .Where(b => !b.IsDeleted)
             .Include(b => b.Medicine)
             .Where(b => b.CurrentQuantity > 0 && b.ExpiryDate <= expiryThreshold)
             .OrderBy(b => b.ExpiryDate);

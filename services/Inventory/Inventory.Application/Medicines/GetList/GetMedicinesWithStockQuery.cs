@@ -23,7 +23,7 @@ public class GetMedicinesWithStockQueryHandler : IRequestHandler<GetMedicinesWit
             Unit = m.Unit,
             TotalStock = m.Batches.Where(b => b.CurrentQuantity > 0 && b.ExpiryDate > DateTime.UtcNow).Sum(b => b.CurrentQuantity),
 
-            EarliestExpiryDate = m.Batches.Where(b => b.CurrentQuantity > 0 && b.ExpiryDate > DateTime.UtcNow).Min(b => (DateTime?)b.ExpiryDate) 
+            EarliestExpiryDate = m.Batches.Where(b => b.CurrentQuantity > 0 && b.ExpiryDate > DateTime.UtcNow && !b.IsDeleted).Min(b => (DateTime?)b.ExpiryDate) 
         }).AsNoTracking().ToListAsync(ct);
 
         return new PagedResponse<List<MedicineWithStockDTO>>(medicines, request.PageNumber, request.PageSize, medicines.Count);
