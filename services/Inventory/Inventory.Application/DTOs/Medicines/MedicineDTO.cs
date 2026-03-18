@@ -4,5 +4,6 @@ public record MedicineDTO(
     Guid Id,
     string Name,
     string SKU,
+    string ActiveIngredient,
     string Unit
 );
