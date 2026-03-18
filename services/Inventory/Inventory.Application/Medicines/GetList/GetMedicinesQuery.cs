@@ -23,7 +23,7 @@ public class GetMedicinesQueryHandler : IRequestHandler<GetMedicinesQuery, Paged
             .OrderBy(m => m.Name)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(m => new MedicineDTO(m.Id, m.Name, m.SKU, m.Unit))
+            .Select(m => new MedicineDTO(m.Id, m.Name, m.SKU, m.ActiveIngredient, m.Unit))
             .ToListAsync(ct);
 
         return new PagedResponse<List<MedicineDTO>>(medicines, request.PageNumber, request.PageSize, totalRecords);

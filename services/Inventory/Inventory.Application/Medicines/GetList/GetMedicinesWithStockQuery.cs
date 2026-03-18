@@ -20,6 +20,7 @@ public class GetMedicinesWithStockQueryHandler : IRequestHandler<GetMedicinesWit
             Id = m.Id,
             Name = m.Name,
             SKU = m.SKU,
+            ActiveIngredient = m.ActiveIngredient,
             Unit = m.Unit,
             TotalStock = m.Batches.Where(b => b.CurrentQuantity > 0 && b.ExpiryDate > DateTime.UtcNow).Sum(b => b.CurrentQuantity),
 
