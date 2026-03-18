@@ -50,12 +50,15 @@ public class MedicinesController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateMedicineCommand command)
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateMedicineRequestDTO request)
     {
-        if (id != command.Id)
-        {
-            return BadRequest("ID trong route không khớp với ID trong body");
-        }
+        var command = new UpdateMedicineCommand(
+            id,
+            request.Name,
+            request.SKU,
+            request.ActiveIngredient,
+            request.Unit
+        );
 
         var result = await _sender.Send(command);
         return Ok(result);
