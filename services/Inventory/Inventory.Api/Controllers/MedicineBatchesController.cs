@@ -54,12 +54,14 @@ public class MedicineBatchesController : ControllerBase
     }
 
     [HttpPut("batches/{id:guid}")]
-    public async Task<IActionResult> UpdateBatch(Guid id, [FromBody] UpdateMedicineBatchCommand command)
+    public async Task<IActionResult> UpdateBatch(Guid id, [FromBody] UpdateMedicineBatchRequestDTO request)
     {
-        if (id != command.BatchId)
-        {
-            return BadRequest("ID trong route không khớp với ID trong body");
-        }
+        var command = new UpdateMedicineBatchCommand(
+            id,
+            request.BatchNumber,
+            request.ExpiryDate,
+            request.Quantity
+        );
 
         var result = await _sender.Send(command);
         return Ok(result);
