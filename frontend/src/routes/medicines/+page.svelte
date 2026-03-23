@@ -112,16 +112,13 @@
         }
     }
 
-    async function handledeleteMedicine(medicineId: string) {
-        try {
-            const response = await api.delete(`/medicines/${medicineId}`);
-            const result = response.data;
+    async function handleDeleteMedicine(medicineId: string) {
+        const shouldDelete = confirm('Delete this medicine?');
+        if (!shouldDelete) return;
 
-            if (result.success === true) {
-                await fetchMedicines();
-            } else {
-                alert("Error: " + result.message);
-            }
+        try {
+            await api.delete(`/medicines/${medicineId}`);
+            await fetchMedicines();
         } catch (error: any) {
             alert("Failed to delete medicine: " + (error.response?.data?.message || error.message));
         }
@@ -181,7 +178,7 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <button onclick={() => openEditModal(medicine)} class="text-emerald-400 hover:text-emerald-300 transition mr-3">Edit</button>
-                                    <button onclick={() => handledeleteMedicine(medicine.id)} class="text-red-400 hover:text-red-300 transition">Delete</button>
+                                    <button onclick={() => handleDeleteMedicine(medicine.id)} class="text-red-400 hover:text-red-300 transition">Delete</button>
                                 </td>
                             </tr>
                         {/each}
