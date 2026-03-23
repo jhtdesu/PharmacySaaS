@@ -21,7 +21,7 @@
             
             localStorage.setItem('jwt_token', token);
 
-            goto('/medicines'); 
+            goto('/homepage'); 
         } catch (error: any) {
             errorMessage = error.response?.data?.message || 'Login failed. Check your credentials.';
         } finally {
