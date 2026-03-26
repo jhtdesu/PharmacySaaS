@@ -6,6 +6,11 @@ export interface Medicine {
     unit: string;
 }
 
+export interface MedicineCheckout {
+    medicineId: string;
+    quantity: number;
+}
+
 export interface MedicineBatch {
     id: string;
     batchNumber: string;
