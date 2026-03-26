@@ -1,8 +1,14 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Auth.Api.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using Shared.Contracts.Models;
 
-namespace Auth.Api.Controllers;
+namespace Auth.Api.Controller;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -47,7 +53,7 @@ public class AuthController : ControllerBase
         }
         await _userManager.AddToRoleAsync(newUser, request.Role);
 
-        return Ok(new BaseResponse<object>(new { TenantId = newUser.TenantId }, "User registered successfully!"));
+        return Ok(new BaseResponse<object>(new { newUser.TenantId }, "User registered successfully!"));
     }
 
     [HttpPost("login")]
@@ -68,9 +74,9 @@ public class AuthController : ControllerBase
         {
             AccessToken = accessToken,
             RefreshToken = refreshToken,
-            Email = user.Email,
-            FullName = user.FullName,
-            TenantId = user.TenantId
+            user.Email,
+            user.FullName,
+            user.TenantId
         }, "Login successful."));
     }
 
