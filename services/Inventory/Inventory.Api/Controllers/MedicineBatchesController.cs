@@ -26,7 +26,7 @@ public class MedicineBatchesController : ControllerBase
     }
 
     [HttpPost("{id:guid}/batches")]
-    public async Task<IActionResult> CreateBatch(Guid id, [FromBody] CreateMedicineBatchRequest request)
+    public async Task<ActionResult<BaseResponse<object>>> CreateBatch(Guid id, [FromBody] CreateMedicineBatchRequest request)
     {
         var command = new CreateMedicineBatchCommand(
             id,
@@ -35,15 +35,16 @@ public class MedicineBatchesController : ControllerBase
             request.Quantity
         );
         var result = await _sender.Send(command);
-        return Ok(result);
+        return Ok(new BaseResponse<object>(result, "Medicine batch created successfully."));
     }
 
     [HttpGet("{id:guid}/batches")]
-    public async Task<IActionResult> GetBatchesByMedicineId(Guid id)
+    public async Task<ActionResult<BaseResponse<object>>> GetBatchesByMedicineId(Guid id)
     {
         var result = await _sender.Send(new GetMedicineBatchByIdQuery(id));
-        if (result == null) return NotFound();
-        return Ok(result);
+        if (result == null) 
+            return BadRequest(new BaseResponse<object>("Batches not found."));
+        return Ok(new BaseResponse<object>(result, "Batches retrieved successfully."));
     }
 
     [HttpGet("batches")]
@@ -54,7 +55,7 @@ public class MedicineBatchesController : ControllerBase
     }
 
     [HttpPut("batches/{id:guid}")]
-    public async Task<IActionResult> UpdateBatch(Guid id, [FromBody] UpdateMedicineBatchRequestDTO request)
+    public async Task<ActionResult<BaseResponse<object>>> UpdateBatch(Guid id, [FromBody] UpdateMedicineBatchRequestDTO request)
     {
         var command = new UpdateMedicineBatchCommand(
             id,
@@ -64,15 +65,16 @@ public class MedicineBatchesController : ControllerBase
         );
 
         var result = await _sender.Send(command);
-        return Ok(result);
+        return Ok(new BaseResponse<object>(result, "Medicine batch updated successfully."));
     }
 
     [HttpDelete("batches/{id:guid}")]
-    public async Task<IActionResult> DeleteBatch(Guid id)
+    public async Task<ActionResult<BaseResponse<object>>> DeleteBatch(Guid id)
     {
         var result = await _sender.Send(new DeleteMedicineBatchCommand(id));
-        if (!result) return NotFound();
-        return NoContent();
+        if (!result) 
+            return NotFound(new BaseResponse<object>("Batch not found."));
+        return Ok(new BaseResponse<object>(null!, "Medicine batch deleted successfully."));
     }
 
     [HttpGet("expiring")]
