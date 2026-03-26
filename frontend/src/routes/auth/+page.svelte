@@ -17,9 +17,11 @@
                 password: password
             });
 
-            const token = response.data.accessToken;
+            const token = response.data.data.accessToken;
+            const refresh = response.data.data.refreshToken;
             
             localStorage.setItem('jwt_token', token);
+            localStorage.setItem('refresh_token', refresh);
 
             goto('/homepage'); 
         } catch (error: any) {
