@@ -27,19 +27,19 @@ public class MedicinesController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(CreateMedicineCommand command)
+    public async Task<ActionResult<BaseResponse<object>>> Create(CreateMedicineCommand command)
     {
         var result = await _sender.Send(command);
-        
-        return Ok(result); 
+        return Ok(new BaseResponse<object>(result, "Medicine created successfully."));
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<ActionResult<BaseResponse<MedicineDTO>>> GetById(Guid id)
     {
         var result = await _sender.Send(new GetMedicineByIdQuery(id));
-        if (result == null) return NotFound();
-        return Ok(result);
+        if (result == null) 
+            return NotFound(new BaseResponse<MedicineDTO>("Medicine not found."));
+        return Ok(new BaseResponse<MedicineDTO>(result, "Medicine retrieved successfully."));
     }
 
     [HttpGet]
@@ -50,7 +50,7 @@ public class MedicinesController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateMedicineRequestDTO request)
+    public async Task<ActionResult<BaseResponse<object>>> Update(Guid id, [FromBody] UpdateMedicineRequestDTO request)
     {
         var command = new UpdateMedicineCommand(
             id,
@@ -61,22 +61,23 @@ public class MedicinesController : ControllerBase
         );
 
         var result = await _sender.Send(command);
-        return Ok(result);
+        return Ok(new BaseResponse<object>(result, "Medicine updated successfully."));
     }
 
     [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<ActionResult<BaseResponse<object>>> Delete(Guid id)
     {
         var result = await _sender.Send(new DeleteMedicineCommand(id));
-        if (!result) return NotFound();
-        return NoContent();
+        if (!result) 
+            return NotFound(new BaseResponse<object>("Medicine not found."));
+        return Ok(new BaseResponse<object>(null!, "Medicine deleted successfully."));
     }
 
     [HttpPost("dispense")]
-    public async Task<IActionResult> Dispense(DispenseMedicineCommand command)
+    public async Task<ActionResult<BaseResponse<object>>> Dispense(DispenseMedicineCommand command)
     {
         await _sender.Send(command);
-        return Ok();
+        return Ok(new BaseResponse<object>(null!, "Medicine dispensed successfully."));
     }
 
     [HttpGet("with-stock")]
@@ -98,16 +99,16 @@ public class MedicinesController : ControllerBase
     }
 
     [HttpPost("checkout")]
-    public async Task<IActionResult> Checkout([FromBody] CheckoutCommand command)
+    public async Task<ActionResult<BaseResponse<object>>> Checkout([FromBody] CheckoutCommand command)
     {
         try
         {
             var receiptNumber = await _sender.Send(command);
-            return Ok(new { Message = "Sale completed successfully.", ReceiptNumber = receiptNumber });
+            return Ok(new BaseResponse<object>(new { ReceiptNumber = receiptNumber }, "Sale completed successfully."));
         }
         catch (Exception ex)
         {
-            return BadRequest(new { Error = ex.Message });
+            return BadRequest(new BaseResponse<object>(ex.Message));
         }
     }
 }
