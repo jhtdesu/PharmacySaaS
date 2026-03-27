@@ -6,6 +6,8 @@ namespace Auth.Api.Data;
 
 public class AuthDbContext : IdentityDbContext<ApplicationUser> 
 {
+    public DbSet<Tenant> Tenants { get; set; }
+
     public AuthDbContext(DbContextOptions<AuthDbContext> options) : base(options)
     {
     }
@@ -14,5 +16,6 @@ public class AuthDbContext : IdentityDbContext<ApplicationUser>
     {
         base.OnModelCreating(builder);
         builder.Entity<ApplicationUser>().ToTable("Users");
+        builder.Entity<Tenant>().ToTable("Tenants");
     }
 }

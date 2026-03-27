@@ -36,12 +36,12 @@ api.interceptors.response.use(
                 }
 
                 const refreshResponse = await axios.post('http://localhost:5000/api/auth/refresh', {
-                    token: jwtToken,
+                    accessToken: jwtToken,
                     refreshToken: refreshToken
                 });
 
-                const newJwt = refreshResponse.data.token;
-                const newRefresh = refreshResponse.data.refreshToken;
+                const newJwt = refreshResponse.data.data.accessToken;
+                const newRefresh = refreshResponse.data.data.refreshToken;
 
                 localStorage.setItem('jwt_token', newJwt);
                 localStorage.setItem('refresh_token', newRefresh);
@@ -54,7 +54,6 @@ api.interceptors.response.use(
                 localStorage.removeItem('jwt_token');
                 localStorage.removeItem('refresh_token');
                 
-                // window.location.href = '/auth';
                 return Promise.reject(refreshError);
             }
         }

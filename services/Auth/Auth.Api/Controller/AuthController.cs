@@ -40,7 +40,7 @@ public class AuthController : ControllerBase
             Email = request.Email,
             UserName = request.Email,
             FullName = request.FullName,
-            TenantId = Guid.NewGuid()
+            // TenantId = Guid.NewGuid()
         };
 
         var isCreated = await _userManager.CreateAsync(newUser, request.Password);
@@ -75,8 +75,8 @@ public class AuthController : ControllerBase
             AccessToken = accessToken,
             RefreshToken = refreshToken,
             user.Email,
-            user.FullName,
-            user.TenantId
+            user.FullName
+            // user.TenantId
         }, "Login successful."));
     }
 
