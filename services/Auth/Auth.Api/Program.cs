@@ -71,7 +71,6 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddProblemDetails();
 
-
 var app = builder.Build();
 
 // Swagger
