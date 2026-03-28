@@ -28,7 +28,6 @@ public class TenantController : ControllerBase
     public async Task<ActionResult<BaseResponse<RegisterTenantResponse>>> RegisterTenant(
         [FromBody] RegisterTenantRequest request)
     {
-        // Validate request
         if (string.IsNullOrWhiteSpace(request.StoreName))
             return BadRequest(new BaseResponse<RegisterTenantResponse>("Store name is required."));
 
@@ -41,15 +40,13 @@ public class TenantController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Email))
             return BadRequest(new BaseResponse<RegisterTenantResponse>("Email is required."));
 
-        if (string.IsNullOrWhiteSpace(request.AdminFullName))
-            return BadRequest(new BaseResponse<RegisterTenantResponse>("Admin full name is required."));
+        if (string.IsNullOrWhiteSpace(request.TenantFullName))
+            return BadRequest(new BaseResponse<RegisterTenantResponse>("Tenant full name is required."));
 
-        // Check if email already exists
         var existingUser = await _userManager.FindByEmailAsync(request.Email);
         if (existingUser != null)
             return BadRequest(new BaseResponse<RegisterTenantResponse>("Email already in use."));
 
-        // Create tenant
         var tenantId = Guid.NewGuid();
         var tenant = new Tenant
         {
@@ -64,64 +61,66 @@ public class TenantController : ControllerBase
             CreatedAt = DateTime.UtcNow
         };
 
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+
         try
         {
-            _dbContext.Tenants.Add(tenant);
-            await _dbContext.SaveChangesAsync();
+            {
+                _dbContext.Tenants.Add(tenant);
+                await _dbContext.SaveChangesAsync();
+            }
+
+            var tenantUser = new ApplicationUser
+            {
+                Email = request.Email,
+                UserName = request.Email,
+                FullName = request.TenantFullName,
+                TenantId = tenantId
+            };
+
+            var createUserResult = await _userManager.CreateAsync(tenantUser, request.Password);
+            if (!createUserResult.Succeeded)
+            {
+                _dbContext.Tenants.Remove(tenant);
+                await _dbContext.SaveChangesAsync();
+
+                return BadRequest(new BaseResponse<RegisterTenantResponse>(
+                    $"Error creating tenant user: {string.Join(", ", createUserResult.Errors.Select(e => e.Description))}"));
+            }
+
+            if (!await _roleManager.RoleExistsAsync("Tenant"))
+            {
+                await _roleManager.CreateAsync(new IdentityRole("Tenant"));
+            }
+
+            await _userManager.AddToRoleAsync(tenantUser, "Tenant");
+
+            await transaction.CommitAsync();
         }
         catch (Exception ex)
         {
-            return StatusCode(500,
-                new BaseResponse<RegisterTenantResponse>($"Error creating tenant: {ex.Message}"));
+            await transaction.RollbackAsync();
+            return StatusCode(500, new BaseResponse<RegisterTenantResponse>($"An error occurred: {ex.Message}"));
         }
 
-        // Create admin user for tenant
-        var adminUser = new ApplicationUser
-        {
-            Email = request.Email,
-            UserName = request.Email,
-            FullName = request.AdminFullName,
-            TenantId = tenantId
-        };
-
-        var createUserResult = await _userManager.CreateAsync(adminUser, request.Password);
-        if (!createUserResult.Succeeded)
-        {
-            // Delete tenant if user creation fails
-            _dbContext.Tenants.Remove(tenant);
-            await _dbContext.SaveChangesAsync();
-
-            return BadRequest(new BaseResponse<RegisterTenantResponse>(
-                $"Error creating admin user: {string.Join(", ", createUserResult.Errors.Select(e => e.Description))}"));
-        }
-
-        // Ensure Admin role exists
-        if (!await _roleManager.RoleExistsAsync("Admin"))
-        {
-            await _roleManager.CreateAsync(new IdentityRole("Admin"));
-        }
-
-        // Assign Admin role to user
-        await _userManager.AddToRoleAsync(adminUser, "Admin");
-
-        // Return response
         var tenantResponse = new TenantResponse(
-            tenant.Id,
-            tenant.StoreName,
-            tenant.Address,
-            tenant.PhoneNumber,
-            tenant.Subscription,
-            tenant.SubscriptionExpiry,
-            tenant.SubscriptionStatus,
-            tenant.IsActive,
-            tenant.CreatedAt
-        );
+                tenant.Id,
+                tenant.StoreName,
+                tenant.Address,
+                tenant.PhoneNumber,
+                tenant.Subscription,
+                tenant.SubscriptionExpiry,
+                tenant.SubscriptionStatus,
+                tenant.IsActive,
+                tenant.CreatedAt
+            );
 
-        var response = new RegisterTenantResponse(
-            tenantId,
-            "Tenant registered successfully!",
-            tenantResponse
-        );
+            var registerResponse = new RegisterTenantResponse(
+                tenantId,
+                "Tenant registered successfully!",
+                tenantResponse
+            );
+        var response = new BaseResponse<RegisterTenantResponse>(registerResponse, "Tenant registered successfully!");
 
         return CreatedAtAction(nameof(RegisterTenant), response);
     }
