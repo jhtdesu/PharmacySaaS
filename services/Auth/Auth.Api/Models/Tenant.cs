@@ -35,7 +35,7 @@ namespace Auth.Api.Models
         string PhoneNumber,
         string Email,
         string Password,
-        string AdminFullName,
+        string TenantFullName,
         Subscription Subscription = Subscription.Free
     );
 
