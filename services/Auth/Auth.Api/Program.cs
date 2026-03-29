@@ -48,6 +48,8 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddControllers();
+builder.Services.AddHttpClient();
+builder.Services.Configure<MomoOptions>(builder.Configuration.GetSection("MomoAPI"));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
