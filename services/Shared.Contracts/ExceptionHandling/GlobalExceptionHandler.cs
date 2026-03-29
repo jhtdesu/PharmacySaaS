@@ -1,8 +1,10 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
-namespace Inventory.Api.Middlewares;
+namespace Shared.Contracts.ExceptionHandling;
 
 public class GlobalExceptionHandler : IExceptionHandler
 {
@@ -14,8 +16,8 @@ public class GlobalExceptionHandler : IExceptionHandler
     }
 
     public async ValueTask<bool> TryHandleAsync(
-        HttpContext httpContext, 
-        Exception exception, 
+        HttpContext httpContext,
+        Exception exception,
         CancellationToken cancellationToken)
     {
         _logger.LogError(exception, "Unhandled exception occurred while processing request.");
@@ -24,7 +26,9 @@ public class GlobalExceptionHandler : IExceptionHandler
 
         if (exception is ValidationException validationException)
         {
-            var errors = validationException.Errors.GroupBy(e => e.PropertyName, e => e.ErrorMessage).ToDictionary(g => g.Key, g => g.ToArray());
+            var errors = validationException.Errors
+                .GroupBy(e => e.PropertyName, e => e.ErrorMessage)
+                .ToDictionary(g => g.Key, g => g.ToArray());
 
             problemDetails = new ValidationProblemDetails(errors)
             {
@@ -60,7 +64,7 @@ public class GlobalExceptionHandler : IExceptionHandler
                 Detail = unauthorizedAccessException.Message
             };
         }
-        else       
+        else
         {
             problemDetails = new ProblemDetails
             {

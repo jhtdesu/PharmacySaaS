@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Shared.Contracts.ExceptionHandling;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -71,7 +72,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-builder.Services.AddProblemDetails();
+builder.Services.AddSharedExceptionHandling();
 
 var app = builder.Build();
 
