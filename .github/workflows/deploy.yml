@@ -1,0 +1,68 @@
+name: Build and Push to AWS ECR
+
+# This triggers the robot every time you push code to the main branch
+on:
+  push:
+    branches: [ "main" ]
+
+# Set up environment variables
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out the code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    # --- BUILD & PUSH FRONTEND ---
+    - name: Build and Push Frontend
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        REPOSITORY: pharmacysaas-frontend
+        IMAGE_TAG: latest
+      run: |
+        docker build -t $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG ./frontend
+        docker push $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG
+
+    # --- BUILD & PUSH AUTH API ---
+    - name: Build and Push Auth API
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        REPOSITORY: pharmacysaas-auth-api
+        IMAGE_TAG: latest
+      run: |
+        docker build -t $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG ./backend/Auth.Api
+        docker push $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG
+
+    # --- BUILD & PUSH INVENTORY API ---
+    - name: Build and Push Inventory API
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        REPOSITORY: pharmacysaas-inventory-api
+        IMAGE_TAG: latest
+      run: |
+        docker build -t $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG ./backend/Inventory.Api
+        docker push $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG
+    # --- BUILD & PUSH API GATEWAY ---
+    - name: Build and Push API Gateway
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        REPOSITORY: pharmacysaas-api-gateway
+        IMAGE_TAG: latest
+      run: |
+        docker build -t $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG ./backend/ApiGateway
+        docker push $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG
