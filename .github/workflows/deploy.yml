@@ -45,7 +45,7 @@ jobs:
         REPOSITORY: pharmacysaas-auth-api
         IMAGE_TAG: latest
       run: |
-        docker build -t $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG ./backend/Auth.Api
+        docker build -t $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG ./services/Auth.Api
         docker push $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG
 
     # --- BUILD & PUSH INVENTORY API ---
@@ -55,7 +55,7 @@ jobs:
         REPOSITORY: pharmacysaas-inventory-api
         IMAGE_TAG: latest
       run: |
-        docker build -t $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG ./backend/Inventory.Api
+        docker build -t $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG ./services/Inventory.Api
         docker push $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG
     # --- BUILD & PUSH API GATEWAY ---
     - name: Build and Push API Gateway
@@ -64,5 +64,5 @@ jobs:
         REPOSITORY: pharmacysaas-api-gateway
         IMAGE_TAG: latest
       run: |
-        docker build -t $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG ./backend/ApiGateway
+        docker build -t $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG ./services/ApiGateway
         docker push $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG
