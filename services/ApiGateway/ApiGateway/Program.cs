@@ -1,3 +1,5 @@
+using Shared.Contracts.ExceptionHandling;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddReverseProxy()
@@ -14,8 +16,11 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddSharedExceptionHandling();
+
 var app = builder.Build();
 
+app.UseExceptionHandler();
 app.UseCors("AllowFrontend"); 
 app.MapReverseProxy();
 

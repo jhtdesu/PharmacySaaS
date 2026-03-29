@@ -2,7 +2,7 @@ using Inventory.Infrastructure;
 using Inventory.Application;
 using Inventory.Application.Common.Interfaces;
 using Inventory.Api.Services;
-using Inventory.Api.Middlewares;
+using Shared.Contracts.ExceptionHandling;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -60,8 +60,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-builder.Services.AddProblemDetails();
+builder.Services.AddSharedExceptionHandling();
 
 
 var app = builder.Build();
