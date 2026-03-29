@@ -1,0 +1,40 @@
+# ==========================================
+# STAGE 1: The Builder (Compiles the SvelteKit app)
+# ==========================================
+FROM oven/bun:1 AS builder
+WORKDIR /app
+
+# 1. Copy dependency files first
+# Doing this first caches the dependencies so Docker doesn't re-download 
+# everything every time you change a single line of Svelte code.
+COPY package.json bun.lock ./
+
+# 2. Install dependencies securely
+RUN bun install --frozen-lockfile
+
+# 3. Copy your actual source code
+COPY . .
+
+# 4. Build the SvelteKit project (Generates the /build folder)
+RUN bun run build
+
+# ==========================================
+# STAGE 2: The Runner (The minimal production environment)
+# ==========================================
+FROM oven/bun:1-alpine AS runner
+WORKDIR /app
+
+# Set the environment to production
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Copy ONLY the files needed to actually run the app from Stage 1
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/build ./build
+
+# Expose the port your app runs on
+EXPOSE 3000
+
+# Start the built SvelteKit server natively using Bun
+CMD ["bun", "run", "build/index.js"]

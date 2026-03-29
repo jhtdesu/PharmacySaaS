@@ -15,11 +15,13 @@ public class MomoController : ControllerBase
 {
     private readonly IOptions<MomoOptions> _options;
     private readonly HttpClient _httpClient;
+    private readonly ILogger<MomoController> _logger;
 
-    public MomoController(IOptions<MomoOptions> options, HttpClient httpClient)
+    public MomoController(IOptions<MomoOptions> options, HttpClient httpClient, ILogger<MomoController> logger)
     {
         _options = options;
         _httpClient = httpClient;
+        _logger = logger;
     }
 
     [HttpPost]
@@ -33,11 +35,18 @@ public class MomoController : ControllerBase
         return Ok(new BaseResponse<MomoExecuteResponseModel>(response, "Payment URL created successfully"));
     }
 
-    [HttpGet]
+    [HttpGet("callback")]
     public IActionResult PaymentCallBack()
     {
         var response = PaymentExecuteAsync(HttpContext.Request.Query);
         return Ok(new BaseResponse<MomoExecuteResponseModel>(response, "Payment callback processed"));
+    }
+
+    [HttpPost("notify")]
+    public IActionResult PaymentNotify()
+    {
+        _logger.LogError("succeeded");
+        return Ok(new BaseResponse<string>("ok", "MoMo notification received"));
     }
 
     private string ComputeHmacSha256(string message, string secretKey)
@@ -66,7 +75,6 @@ public class MomoController : ControllerBase
 
         var signature = ComputeHmacSha256(rawData, _options.Value.SecretKey!);
 
-        // Create an object representing the request data
         var requestData = new
         {
             accessKey = _options.Value.AccessKey,
@@ -99,6 +107,7 @@ public class MomoController : ControllerBase
         var orderId = collection.FirstOrDefault(s => s.Key == "orderId").Value.FirstOrDefault() ?? string.Empty;
         var message = collection.FirstOrDefault(s => s.Key == "message").Value.FirstOrDefault() ?? string.Empty;
         var errorCode = collection.FirstOrDefault(s => s.Key == "errorCode").Value.FirstOrDefault() ?? string.Empty;
+        _logger.LogError("succeeded");
         return new MomoExecuteResponseModel()
         {
             OrderId = orderId,
