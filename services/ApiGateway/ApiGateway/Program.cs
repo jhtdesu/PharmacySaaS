@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 using Shared.Contracts.ExceptionHandling;
 
 var builder = WebApplication.CreateBuilder(args);
