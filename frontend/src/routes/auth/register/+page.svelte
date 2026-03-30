@@ -12,8 +12,8 @@
 	let email = $state('');
 	let phoneNumber = $state('');
 	let address = $state('');
-	let subscription = $state('Free');
-	let role = $state('Pharmacist');
+	let subscription = $state(0);
+	let role = $state('User');
 	let password = $state('');
 	let confirmPassword = $state('');
 
@@ -55,7 +55,7 @@
 						email,
 						password,
 						tenantFullName,
-						subscription 
+						subscription
 					})
 					: await api.post('/auth/register', {
 						email,
