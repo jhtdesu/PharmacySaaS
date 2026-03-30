@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export const api = axios.create({
-    baseURL: 'http://localhost:5000/api', 
+    baseURL: 'http://54.253.146.69:5000/api', 
     headers: {
         'Content-Type': 'application/json'
     }
@@ -35,7 +35,7 @@ api.interceptors.response.use(
                     throw new Error("No refresh token available.");
                 }
 
-                const refreshResponse = await axios.post('http://localhost:5000/api/auth/refresh', {
+                const refreshResponse = await axios.post('http://54.253.146.69:5000/api/auth/refresh', {
                     accessToken: jwtToken,
                     refreshToken: refreshToken
                 });
