@@ -11,7 +11,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://3.26.16.50:3000", "http://3.26.16.50:5173") 
+        policy.WithOrigins("https://jhtdesu-app.tech") 
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials(); 
