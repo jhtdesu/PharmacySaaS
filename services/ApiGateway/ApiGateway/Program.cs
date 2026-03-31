@@ -9,7 +9,7 @@ builder.Services.AddReverseProxy()
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
+    options.AddDefaultPolicy(policy =>
     {
         policy.WithOrigins("https://jhtdesu-app.tech") 
               .AllowAnyHeader()
@@ -23,6 +23,7 @@ builder.Services.AddSharedExceptionHandling();
 var app = builder.Build();
 
 app.UseExceptionHandler();
+app.UseRouting();
 app.UseCors("AllowFrontend"); 
 app.MapReverseProxy();
 
