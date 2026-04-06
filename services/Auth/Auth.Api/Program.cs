@@ -1,6 +1,7 @@
 using System.Text;
 using Auth.Api.Data;
 using Auth.Api.Models;
+using Auth.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -49,6 +50,9 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddControllers();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITenantService, TenantService>();
+builder.Services.AddScoped<IMomoService, MomoService>();
 builder.Services.AddHttpClient();
 builder.Services.Configure<MomoOptions>(builder.Configuration.GetSection("MomoAPI"));
 builder.Services.AddEndpointsApiExplorer();
