@@ -33,5 +33,12 @@ public class MomoController : ControllerBase
     {
         return Ok(_momoService.BuildNotificationResponse());
     }
+
+    [HttpPost("webhook")]
+    public async Task<IActionResult> Webhook([FromBody] MomoWebhookModel webhook, CancellationToken cancellationToken)
+    {
+        var response = await _momoService.BuildWebhookResponseAsync(webhook, cancellationToken);
+        return Ok(response);
+    }
 }
 

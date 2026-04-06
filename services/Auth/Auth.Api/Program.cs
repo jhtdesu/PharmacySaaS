@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using RabbitMQ.Client;
 using Shared.Contracts.ExceptionHandling;
 
 
@@ -49,10 +50,31 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// RabbitMQ Connection
+var rabbitMqSettings = builder.Configuration.GetSection("RabbitMQ");
+var rabbitMqHost = rabbitMqSettings["Host"] ?? "rabbitmq";
+var rabbitMqPort = int.TryParse(rabbitMqSettings["Port"], out var port) ? port : 5672;
+var rabbitMqUser = rabbitMqSettings["User"] ?? "guest";
+var rabbitMqPassword = rabbitMqSettings["Password"] ?? "guest";
+
+var connectionFactory = new ConnectionFactory
+{
+    HostName = rabbitMqHost,
+    Port = rabbitMqPort,
+    UserName = rabbitMqUser,
+    Password = rabbitMqPassword,
+    AutomaticRecoveryEnabled = true,
+    NetworkRecoveryInterval = TimeSpan.FromSeconds(10)
+};
+
+builder.Services.AddSingleton<IConnectionFactory>(connectionFactory);
+
 builder.Services.AddControllers();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddScoped<IMomoService, MomoService>();
+builder.Services.AddScoped<IMessageQueueService, RabbitMqMessageQueueService>();
+builder.Services.AddHostedService<MomoWebhookConsumerWorker>();
 builder.Services.AddHttpClient();
 builder.Services.Configure<MomoOptions>(builder.Configuration.GetSection("MomoAPI"));
 builder.Services.AddEndpointsApiExplorer();

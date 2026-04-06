@@ -13,12 +13,14 @@ public class MomoService : IMomoService
     private readonly IOptions<MomoOptions> _options;
     private readonly HttpClient _httpClient;
     private readonly ILogger<MomoService> _logger;
+    private readonly IMessageQueueService _messageQueueService;
 
-    public MomoService(IOptions<MomoOptions> options, HttpClient httpClient, ILogger<MomoService> logger)
+    public MomoService(IOptions<MomoOptions> options, HttpClient httpClient, ILogger<MomoService> logger, IMessageQueueService messageQueueService)
     {
         _options = options;
         _httpClient = httpClient;
         _logger = logger;
+        _messageQueueService = messageQueueService;
     }
 
     public async Task<BaseResponse<MomoExecuteResponseModel>> CreatePaymentUrlAsync(OrderInfoModel model)
@@ -42,6 +44,39 @@ public class MomoService : IMomoService
     {
         _logger.LogError("succeeded");
         return new BaseResponse<string>("ok", "MoMo notification received");
+    }
+
+    public async Task<BaseResponse<string>> BuildWebhookResponseAsync(MomoWebhookModel webhookModel, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(webhookModel.Signature))
+            {
+                _logger.LogWarning("Momo webhook rejected: missing signature. OrderId: {OrderId}, TransId: {TransId}", webhookModel.OrderId, webhookModel.TransId);
+                return new BaseResponse<string>("Invalid webhook signature", "Signature is required");
+            }
+
+            var rawData =
+                $"partnerCode={webhookModel.PartnerCode}&accessKey={webhookModel.AccessKey}&requestId={webhookModel.RequestId}&amount={webhookModel.Amount}&orderId={webhookModel.OrderId}&orderInfo={webhookModel.OrderInfo}&orderType={webhookModel.OrderType}&transId={webhookModel.TransId}&message={webhookModel.Message}&resultCode={webhookModel.ResultCode}&payType={webhookModel.PayType}&responseTime={webhookModel.ResponseTime}&extraData={webhookModel.ExtraData}";
+            var expectedSignature = ComputeHmacSha256(rawData, _options.Value.SecretKey!);
+
+            if (!string.Equals(expectedSignature, webhookModel.Signature, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("Momo webhook rejected: invalid signature. OrderId: {OrderId}, TransId: {TransId}", webhookModel.OrderId, webhookModel.TransId);
+                return new BaseResponse<string>("Invalid webhook signature", "Signature verification failed");
+            }
+
+            await _messageQueueService.PublishMomoWebhookAsync(webhookModel, cancellationToken);
+
+            _logger.LogInformation("Momo webhook received and published to queue. OrderId: {OrderId}, TransId: {TransId}", webhookModel.OrderId, webhookModel.TransId);
+
+            return new BaseResponse<string>("ok", "Webhook received and queued for processing");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing Momo webhook");
+            return new BaseResponse<string>("Error processing webhook", ex.Message);
+        }
     }
 
     private string ComputeHmacSha256(string message, string secretKey)
