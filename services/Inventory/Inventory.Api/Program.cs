@@ -3,16 +3,30 @@ using Inventory.Application;
 using Inventory.Application.Common.Interfaces;
 using Inventory.Api.Services;
 using Shared.Contracts.ExceptionHandling;
+using Shared.Contracts.Configuration;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
+var root = Directory.GetCurrentDirectory();
+var dotenv = Path.Combine(root, ".env");
+DotEnv.Load(dotenv);
+
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = Encoding.UTF8.GetBytes(jwtSettings["Secret"]!);
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "";
+connectionString = connectionString
+    .Replace("PGUSER", Environment.GetEnvironmentVariable("PGUSER") ?? "")
+    .Replace("PGPASSWORD", Environment.GetEnvironmentVariable("PGPASSWORD") ?? "");
+
+builder.Services.AddDbContext<InventoryDbContext>(options =>
+    options.UseNpgsql(connectionString));
 
 builder.Services.AddAuthentication(options =>
 {

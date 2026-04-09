@@ -9,14 +9,23 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using RabbitMQ.Client;
 using Shared.Contracts.ExceptionHandling;
+using Shared.Contracts.Configuration;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
+var root = Directory.GetCurrentDirectory();
+var dotenv = Path.Combine(root, ".env");
+DotEnv.Load(dotenv);
+
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = Encoding.UTF8.GetBytes(jwtSettings["Secret"]!);
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "";
+connectionString = connectionString
+    .Replace("PGUSER", Environment.GetEnvironmentVariable("PGUSER") ?? "")
+    .Replace("PGPASSWORD", Environment.GetEnvironmentVariable("PGPASSWORD") ?? "");
+
 builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseNpgsql(connectionString));
 
