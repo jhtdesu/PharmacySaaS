@@ -12,14 +12,12 @@ public class MomoService : IMomoService
 {
     private readonly IOptions<MomoOptions> _options;
     private readonly HttpClient _httpClient;
-    private readonly ILogger<MomoService> _logger;
     private readonly IMessageQueueService _messageQueueService;
 
-    public MomoService(IOptions<MomoOptions> options, HttpClient httpClient, ILogger<MomoService> logger, IMessageQueueService messageQueueService)
+    public MomoService(IOptions<MomoOptions> options, HttpClient httpClient, IMessageQueueService messageQueueService)
     {
         _options = options;
         _httpClient = httpClient;
-        _logger = logger;
         _messageQueueService = messageQueueService;
     }
 
@@ -42,7 +40,6 @@ public class MomoService : IMomoService
 
     public BaseResponse<string> BuildNotificationResponse()
     {
-        _logger.LogError("succeeded");
         return new BaseResponse<string>("ok", "MoMo notification received");
     }
 
@@ -52,7 +49,6 @@ public class MomoService : IMomoService
         {
             if (string.IsNullOrWhiteSpace(webhookModel.Signature))
             {
-                _logger.LogWarning("Momo webhook rejected: missing signature. OrderId: {OrderId}, TransId: {TransId}", webhookModel.OrderId, webhookModel.TransId);
                 return new BaseResponse<string>("Invalid webhook signature", "Signature is required");
             }
 
@@ -62,19 +58,15 @@ public class MomoService : IMomoService
 
             if (!string.Equals(expectedSignature, webhookModel.Signature, StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogWarning("Momo webhook rejected: invalid signature. OrderId: {OrderId}, TransId: {TransId}", webhookModel.OrderId, webhookModel.TransId);
                 return new BaseResponse<string>("Invalid webhook signature", "Signature verification failed");
             }
 
             await _messageQueueService.PublishMomoWebhookAsync(webhookModel, cancellationToken);
 
-            _logger.LogInformation("Momo webhook received and published to queue. OrderId: {OrderId}, TransId: {TransId}", webhookModel.OrderId, webhookModel.TransId);
-
             return new BaseResponse<string>("ok", "Webhook received and queued for processing");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing Momo webhook");
             return new BaseResponse<string>("Error processing webhook", ex.Message);
         }
     }

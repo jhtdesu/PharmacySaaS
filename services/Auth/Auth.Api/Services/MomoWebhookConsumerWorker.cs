@@ -9,16 +9,21 @@ namespace Auth.Api.Services;
 public class MomoWebhookConsumerWorker : BackgroundService
 {
     private readonly IConnectionFactory _connectionFactory;
-    private readonly ILogger<MomoWebhookConsumerWorker> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly string _inventoryApiBaseUrl;
 
     private const string MomoWebhookExchange = "momo.events";
     private const string MomoWebhookQueue = "momo.webhook.queue";
     private const string MomoWebhookRoutingKey = "momo.webhook.received";
 
-    public MomoWebhookConsumerWorker(IConnectionFactory connectionFactory, ILogger<MomoWebhookConsumerWorker> logger)
+    public MomoWebhookConsumerWorker(
+        IConnectionFactory connectionFactory,
+        IHttpClientFactory httpClientFactory,
+        IConfiguration configuration)
     {
         _connectionFactory = connectionFactory;
-        _logger = logger;
+        _httpClientFactory = httpClientFactory;
+        _inventoryApiBaseUrl = configuration["InventoryApi:BaseUrl"] ?? "http://inventory-api:8080";
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -62,15 +67,12 @@ public class MomoWebhookConsumerWorker : BackgroundService
             consumer: consumer,
             cancellationToken: stoppingToken);
 
-        _logger.LogInformation("Momo webhook consumer started and listening on {Queue}", MomoWebhookQueue);
-
         try
         {
             await Task.Delay(Timeout.InfiniteTimeSpan, stoppingToken);
         }
         catch (OperationCanceledException)
         {
-            _logger.LogInformation("Momo webhook consumer stopping");
         }
     }
 
@@ -81,7 +83,6 @@ public class MomoWebhookConsumerWorker : BackgroundService
 
         if (consumer is null || channel is null)
         {
-            _logger.LogWarning("Momo webhook consumer received a message without an active channel");
             return;
         }
 
@@ -92,27 +93,35 @@ public class MomoWebhookConsumerWorker : BackgroundService
 
             if (webhook is null)
             {
-                _logger.LogWarning("Momo webhook message could not be deserialized. DeliveryTag: {DeliveryTag}", args.DeliveryTag);
                 await channel.BasicNackAsync(args.DeliveryTag, multiple: false, requeue: false);
                 return;
             }
 
-            _logger.LogInformation(
-                "Processed Momo webhook message. OrderId: {OrderId}, TransId: {TransId}, ResultCode: {ResultCode}",
-                webhook.OrderId,
-                webhook.TransId,
-                webhook.ResultCode);
+            if (webhook.ResultCode == 0)
+            {
+                if (Guid.TryParse(webhook.OrderId, out var saleId))
+                {
+                    await CompleteSaleAsync(saleId);
+                }
+            }
 
             await channel.BasicAckAsync(args.DeliveryTag, multiple: false);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error processing Momo webhook message. DeliveryTag: {DeliveryTag}", args.DeliveryTag);
-
             if (channel.IsOpen)
             {
                 await channel.BasicNackAsync(args.DeliveryTag, multiple: false, requeue: false);
             }
         }
+    }
+
+    private async Task CompleteSaleAsync(Guid saleId)
+    {
+        var client = _httpClientFactory.CreateClient();
+        var endpoint = $"{_inventoryApiBaseUrl.TrimEnd('/')}/api/Medicines/checkout/complete";
+
+        using var response = await client.PostAsJsonAsync(endpoint, new { SaleId = saleId });
+        response.EnsureSuccessStatusCode();
     }
 }
