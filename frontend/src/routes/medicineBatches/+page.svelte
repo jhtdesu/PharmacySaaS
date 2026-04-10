@@ -76,7 +76,7 @@
 
   async function fetchMedicineBatches() {
     try {
-      const response = await api.get('/batches');
+      const response = await api.get('/medicineBatches/batches');
       const payload = response.data;
       const list = payload?.data ?? payload?.Data ?? payload;
 
@@ -98,7 +98,7 @@
 
     isSubmitting = true;
     try {
-      await api.post(`/batches/${batchForm.medicineId}`, {
+      await api.post(`/medicineBatches/${batchForm.medicineId}/batches`, {
         batchNumber: batchForm.batchNumber,
         expiryDate: batchForm.expiryDate,
         quantity: Number(batchForm.quantity)
@@ -116,7 +116,7 @@
   async function handleUpdateBatch(batchId: string) {
     isSubmitting = true;
     try {
-      await api.put(`/batches/${batchId}`, {
+      await api.put(`/medicineBatches/batches/${batchId}`, {
         batchNumber: batchForm.batchNumber,
         expiryDate: batchForm.expiryDate,
         quantity: Number(batchForm.quantity)
@@ -136,7 +136,7 @@
     if (!shouldDelete) return;
 
     try {
-      await api.delete(`/batches/${batchId}`);
+      await api.delete(`/medicineBatches/batches/${batchId}`);
       await fetchMedicineBatches();
     } catch (error: any) {
       alert('Failed to delete batch: ' + (error.response?.data?.message || error.message));
