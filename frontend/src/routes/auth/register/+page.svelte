@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { api } from '$lib/api';
+	import { authApi } from '$lib/api';
 
 	type RegisterMode = 'tenant' | 'user';
 
@@ -48,7 +48,7 @@
 		try {
 			const response =
 				mode === 'tenant'
-					? await api.post('/tenant/register', {
+					? await authApi.post('/tenant/register', {
 						storeName,
 						address,
 						phoneNumber,
@@ -57,7 +57,7 @@
 						tenantFullName,
 						subscription
 					})
-					: await api.post('/auth/register', {
+					: await authApi.post('/auth/register', {
 						email,
 						password,
 						fullName,

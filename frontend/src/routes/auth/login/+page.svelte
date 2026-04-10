@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { api } from '$lib/api'; 
+    import { authApi } from '$lib/api'; 
     import { goto } from '$app/navigation';
 
     let email = '';
@@ -12,7 +12,7 @@
         errorMessage = '';
 
         try {
-            const response = await api.post('/auth/login', {
+            const response = await authApi.post('/auth/login', {
                 email: email,
                 password: password
             });

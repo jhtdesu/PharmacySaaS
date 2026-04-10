@@ -75,8 +75,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     environment:
-      - PUBLIC_AUTH_API_URL=http://localhost:5001/api
-      - PUBLIC_INVENTORY_API_URL=http://localhost:5002/api
+      - PUBLIC_AUTH_API_URL=https://auth.jhtdesu-app.tech/api
+      - PUBLIC_INVENTORY_API_URL=https://api.jhtdesu-app.tech/api
     ports:
       - "3000:3000"
     depends_on:

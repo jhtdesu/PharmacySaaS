@@ -1,7 +1,17 @@
 import axios from 'axios';
 
+const inventoryBaseUrl = import.meta.env.PUBLIC_INVENTORY_API_URL ?? 'https://api.jhtdesu-app.tech/api';
+const authBaseUrl = import.meta.env.PUBLIC_AUTH_API_URL ?? 'https://auth.jhtdesu-app.tech/api';
+
 export const api = axios.create({
-    baseURL: 'https://api.jhtdesu-app.tech/api', 
+    baseURL: inventoryBaseUrl,
+    headers: {
+        'Content-Type': 'application/json'
+    }
+});
+
+export const authApi = axios.create({
+    baseURL: authBaseUrl,
     headers: {
         'Content-Type': 'application/json'
     }
@@ -35,7 +45,7 @@ api.interceptors.response.use(
                     throw new Error("No refresh token available.");
                 }
 
-                const refreshResponse = await axios.post('https://api.jhtdesu-app.tech/api/auth/refresh', {
+                const refreshResponse = await axios.post(`${authBaseUrl}/auth/refresh`, {
                     accessToken: jwtToken,
                     refreshToken: refreshToken
                 });
