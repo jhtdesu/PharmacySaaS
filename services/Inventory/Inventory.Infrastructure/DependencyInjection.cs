@@ -9,9 +9,14 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        var connectionString = configuration.GetConnectionString("DefaultConnection") ?? "";
+        connectionString = connectionString
+            .Replace("PGUSER", Environment.GetEnvironmentVariable("PGUSER") ?? "")
+            .Replace("PGPASSWORD", Environment.GetEnvironmentVariable("PGPASSWORD") ?? "");
+
         services.AddDbContext<InventoryDbContext>(options =>
             options.UseNpgsql(
-                configuration.GetConnectionString("DefaultConnection"),
+                connectionString,
                 b => b.MigrationsAssembly(typeof(InventoryDbContext).Assembly.FullName)));
                 
         services.AddScoped<IInventoryDbContext>(provider => 

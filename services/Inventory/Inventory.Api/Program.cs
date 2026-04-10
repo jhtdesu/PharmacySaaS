@@ -6,7 +6,6 @@ using Shared.Contracts.ExceptionHandling;
 using Shared.Contracts.Configuration;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 
@@ -14,19 +13,12 @@ using Microsoft.OpenApi;
 var builder = WebApplication.CreateBuilder(args);
 
 var root = Directory.GetCurrentDirectory();
-var dotenv = Path.Combine(root, ".env");
-DotEnv.Load(dotenv);
+var dotenv = FindFileInCurrentOrParents(root, ".env");
+if (!string.IsNullOrEmpty(dotenv))
+    DotEnv.Load(dotenv);
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = Encoding.UTF8.GetBytes(jwtSettings["Secret"]!);
-
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "";
-connectionString = connectionString
-    .Replace("PGUSER", Environment.GetEnvironmentVariable("PGUSER") ?? "")
-    .Replace("PGPASSWORD", Environment.GetEnvironmentVariable("PGPASSWORD") ?? "");
-
-builder.Services.AddDbContext<InventoryDbContext>(options =>
-    options.UseNpgsql(connectionString));
 
 builder.Services.AddAuthentication(options =>
 {
@@ -91,3 +83,19 @@ app.UseExceptionHandler();
 app.MapControllers();
 
 app.Run();
+
+static string? FindFileInCurrentOrParents(string startDirectory, string fileName)
+{
+    var directory = new DirectoryInfo(startDirectory);
+
+    while (directory != null)
+    {
+        var candidate = Path.Combine(directory.FullName, fileName);
+        if (File.Exists(candidate))
+            return candidate;
+
+        directory = directory.Parent;
+    }
+
+    return null;
+}

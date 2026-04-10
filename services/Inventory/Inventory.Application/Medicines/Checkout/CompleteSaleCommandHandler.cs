@@ -5,34 +5,32 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Inventory.Application.Medicines.Checkout;
 
-public class CheckoutCommandHandler : IRequestHandler<CheckoutCommand, string>
+public class CompleteSaleCommandHandler : IRequestHandler<CompleteSaleCommand, string>
 {
     private readonly IInventoryDbContext _context;
-    private readonly ITenantService _tenantService;
 
-    public CheckoutCommandHandler(IInventoryDbContext context, ITenantService tenantService)
+    public CompleteSaleCommandHandler(IInventoryDbContext context)
     {
         _context = context;
-        _tenantService = tenantService;
     }
 
-    public async Task<string> Handle(CheckoutCommand request, CancellationToken cancellationToken)
+    public async Task<string> Handle(CompleteSaleCommand request, CancellationToken cancellationToken)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
 
         try
         {
-            var sale = new Sale
-            {
-                Id = Guid.NewGuid(),
-                ReceiptNumber = $"REC-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 5).ToUpper()}",
-                SaleDate = DateTime.UtcNow,
-                ProcessedBy = _tenantService.GetCurrentTenantId(),
-                TotalAmount = 0,
-                Items = new List<SaleItem>()
-            };
+            var sale = await _context.Sales
+                .Include(s => s.Items)
+                .FirstOrDefaultAsync(s => s.Id == request.SaleId, cancellationToken);
 
-            foreach (var item in request.Items)
+            if (sale == null)
+                throw new Exception($"Sale with ID {request.SaleId} not found.");
+
+            if (sale.SaleStatus != SaleStatus.Pending)
+                throw new Exception($"Sale is not in Pending status. Current status: {sale.SaleStatus}.");
+
+            foreach (var item in sale.Items)
             {
                 var medicine = await _context.Medicines.FirstOrDefaultAsync(m => m.Id == item.MedicineId, cancellationToken);
 
@@ -45,15 +43,12 @@ public class CheckoutCommandHandler : IRequestHandler<CheckoutCommand, string>
                     .ToListAsync(cancellationToken);
 
                 int remainingToFulfill = item.Quantity;
-                decimal unitPrice = 0;
 
                 foreach (var batch in batches)
                 {
                     if (remainingToFulfill == 0) break;
 
                     int quantityToDeduct = Math.Min(batch.CurrentQuantity, remainingToFulfill);
-                    if (unitPrice == 0)
-                        unitPrice = batch.PurchasePrice; 
                     batch.CurrentQuantity -= quantityToDeduct;
                     remainingToFulfill -= quantityToDeduct;
                 }
@@ -62,22 +57,11 @@ public class CheckoutCommandHandler : IRequestHandler<CheckoutCommand, string>
                 {
                     throw new Exception($"Insufficient stock for {medicine.Name}. Short by {remainingToFulfill}.");
                 }
-
-                var subTotal = item.Quantity * unitPrice;
-
-                sale.Items.Add(new SaleItem
-                {
-                    Id = Guid.NewGuid(),
-                    MedicineId = medicine.Id,
-                    Quantity = item.Quantity,
-                    UnitPrice = unitPrice, 
-                    SubTotal = subTotal
-                });
-
-                sale.TotalAmount += subTotal;
             }
 
-            _context.Sales.Add(sale);
+            sale.SaleStatus = SaleStatus.Completed;
+
+            _context.Sales.Update(sale);
             await _context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 

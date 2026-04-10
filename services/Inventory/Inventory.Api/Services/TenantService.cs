@@ -30,4 +30,37 @@ public class TenantService : ITenantService
 
         return tenantId;
     }
+
+    public Guid GetCurrentUserId()
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+
+        if (user == null || user.Identity?.IsAuthenticated != true)
+        {
+            throw new UnauthorizedAccessException("User is not authenticated.");
+        }
+
+        var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+        {
+            throw new UnauthorizedAccessException("User ID is missing from the token.");
+        }
+
+        return userId;
+    }
+
+    public string? GetCurrentUserFullName()
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+
+        if (user == null || user.Identity?.IsAuthenticated != true)
+        {
+            return null;
+        }
+
+        return user.FindFirst("FullName")?.Value
+            ?? user.FindFirst(ClaimTypes.Name)?.Value
+            ?? user.FindFirst("name")?.Value;
+    }
 }

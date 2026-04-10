@@ -1,4 +1,4 @@
-namespace Inventory.Domain.Entities; // Adjust to your actual namespace
+namespace Inventory.Domain.Entities;
 
 public class SaleItem : BaseData
 {

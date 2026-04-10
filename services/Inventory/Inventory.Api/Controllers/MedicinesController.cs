@@ -99,12 +99,27 @@ public class MedicinesController : ControllerBase
     }
 
     [HttpPost("checkout")]
-    public async Task<ActionResult<BaseResponse<object>>> Checkout([FromBody] CheckoutCommand command)
+    public async Task<ActionResult<BaseResponse<CreatePendingSaleResponseDTO>>> Checkout([FromBody] CreatePendingSaleCommand command)
+    {
+        try
+        {
+            var result = await _sender.Send(command);
+            return Ok(new BaseResponse<CreatePendingSaleResponseDTO>(result, "Created Order"));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new BaseResponse<CreatePendingSaleResponseDTO>(ex.Message));
+        }
+    }
+
+    [HttpPost("checkout/complete")]
+    [AllowAnonymous]
+    public async Task<ActionResult<BaseResponse<object>>> CompleteCheckout([FromBody] CompleteSaleCommand command)
     {
         try
         {
             var receiptNumber = await _sender.Send(command);
-            return Ok(new BaseResponse<object>(new { ReceiptNumber = receiptNumber }, "Sale completed successfully."));
+            return Ok(new BaseResponse<object>(new { ReceiptNumber = receiptNumber }, "Order completed successfully."));
         }
         catch (Exception ex)
         {

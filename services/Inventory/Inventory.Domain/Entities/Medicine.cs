@@ -10,5 +10,4 @@ public class Medicine : BaseData
     public int LowStockLevel { get; set; }
 
     public List<MedicineBatch> Batches { get; private set; } = new();
-    public int GetTotalStock() => Batches.Sum(b => b.CurrentQuantity);
 }

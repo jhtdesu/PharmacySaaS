@@ -9,12 +9,11 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<InventoryD
 {
     public InventoryDbContext CreateDbContext(string[] args)
     {
-        // Load .env file from parent directory
         var root = Directory.GetCurrentDirectory();
-        var parent = Directory.GetParent(root)?.Parent; // Go up to services directory
-        var dotenv = parent != null ? Path.Combine(parent.FullName, ".env") : "";
-        
-        DotEnv.Load(dotenv);
+        var dotenv = FindFileInCurrentOrParents(root, ".env");
+
+        if (!string.IsNullOrEmpty(dotenv))
+            DotEnv.Load(dotenv);
 
         var config = new ConfigurationBuilder()
             .SetBasePath(root)
@@ -35,5 +34,21 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<InventoryD
         optionsBuilder.UseNpgsql(connectionString);
 
         return new InventoryDbContext(optionsBuilder.Options);
+    }
+
+    private static string? FindFileInCurrentOrParents(string startDirectory, string fileName)
+    {
+        var directory = new DirectoryInfo(startDirectory);
+
+        while (directory != null)
+        {
+            var candidate = Path.Combine(directory.FullName, fileName);
+            if (File.Exists(candidate))
+                return candidate;
+
+            directory = directory.Parent;
+        }
+
+        return null;
     }
 }
