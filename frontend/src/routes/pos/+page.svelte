@@ -3,6 +3,22 @@
     import { api } from '$lib/api';
     import type { Medicine, MedicineCheckout } from '$lib/types';
 
+    type CheckoutOrderInfo = {
+        orderId?: string;
+        fullName?: string;
+        amount?: number;
+        orderInfo?: string;
+        OrderId?: string;
+        FullName?: string;
+        Amount?: number;
+        OrderInfo?: string;
+    };
+
+    type PaymentLinkResponse = {
+        payUrl?: string;
+        PayUrl?: string;
+    };
+
     let medicines: Medicine[] = $state([]);
     let cart: (MedicineCheckout & { name: string })[] = $state([]);
     let selectedMedicineId = $state('');
@@ -78,10 +94,39 @@
 
         isCheckingOut = true;
         try {
-            await api.post(`medicines/checkout`, { items: cart });
-            alert('Checkout successful!');
+            const checkoutResponse = await api.post(`medicines/checkout`, {
+                items: cart.map((item) => ({
+                    medicineId: item.medicineId,
+                    quantity: item.quantity
+                }))
+            });
+
+            const checkoutPayload = checkoutResponse.data;
+            const checkoutData: CheckoutOrderInfo | undefined = checkoutPayload?.data ?? checkoutPayload?.Data;
+
+            if (!checkoutData) {
+                throw new Error('Checkout response is missing order data.');
+            }
+
+            const orderInfoPayload = {
+                orderId: checkoutData.orderId ?? checkoutData.OrderId,
+                fullName: checkoutData.fullName ?? checkoutData.FullName,
+                amount: checkoutData.amount ?? checkoutData.Amount,
+                orderInfo: checkoutData.orderInfo ?? checkoutData.OrderInfo
+            };
+
+            const paymentResponse = await api.post(`momo`, orderInfoPayload);
+            const paymentPayload = paymentResponse.data;
+            const paymentData: PaymentLinkResponse | undefined = paymentPayload?.data ?? paymentPayload?.Data;
+            const paymentUrl = paymentData?.payUrl ?? paymentData?.PayUrl;
+
+            if (!paymentUrl) {
+                throw new Error('Payment URL not returned by payment service.');
+            }
+
             cart = [];
-            fetchMedicines();
+            await fetchMedicines();
+            window.location.href = paymentUrl;
         } catch (error: any) {
             alert(error.response?.data?.message || 'Failed to checkout medicines.');
             console.error("Checkout Error:", error);
