@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const inventoryBaseUrl = import.meta.env.PUBLIC_INVENTORY_API_URL ?? 'https://api.jhtdesu-app.tech';
-const authBaseUrl = import.meta.env.PUBLIC_AUTH_API_URL ?? 'https://api.jhtdesu-app.tech';
+const inventoryBaseUrl = 'https://api.jhtdesu-app.tech/api';
+const authBaseUrl = 'https://api.jhtdesu-app.tech/api';
 
 export const api = axios.create({
     baseURL: inventoryBaseUrl,
