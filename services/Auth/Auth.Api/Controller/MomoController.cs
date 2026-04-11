@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Auth.Api.Models;
 using Auth.Api.Services;
 
@@ -35,10 +36,11 @@ public class MomoController : ControllerBase
     }
 
     [HttpPost("webhook")]
+    [AllowAnonymous]
     public async Task<IActionResult> Webhook([FromBody] MomoWebhookModel webhook, CancellationToken cancellationToken)
     {
         var response = await _momoService.BuildWebhookResponseAsync(webhook, cancellationToken);
-        return Ok(response);
+        return response.Success ? Ok(response) : BadRequest(response);
     }
 }
 

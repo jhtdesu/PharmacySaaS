@@ -13,12 +13,18 @@ public class MomoService : IMomoService
     private readonly IOptions<MomoOptions> _options;
     private readonly HttpClient _httpClient;
     private readonly IMessageQueueService _messageQueueService;
+    private readonly ILogger<MomoService> _logger;
 
-    public MomoService(IOptions<MomoOptions> options, HttpClient httpClient, IMessageQueueService messageQueueService)
+    public MomoService(
+        IOptions<MomoOptions> options,
+        HttpClient httpClient,
+        IMessageQueueService messageQueueService,
+        ILogger<MomoService> logger)
     {
         _options = options;
         _httpClient = httpClient;
         _messageQueueService = messageQueueService;
+        _logger = logger;
     }
 
     public async Task<BaseResponse<MomoExecuteResponseModel>> CreatePaymentUrlAsync(OrderInfoModel model)
@@ -49,6 +55,7 @@ public class MomoService : IMomoService
         {
             if (string.IsNullOrWhiteSpace(webhookModel.Signature))
             {
+                _logger.LogWarning("MoMo webhook rejected: missing signature. OrderId: {OrderId}", webhookModel.OrderId);
                 return new BaseResponse<string>("Invalid webhook signature", "Signature is required");
             }
 
@@ -58,15 +65,18 @@ public class MomoService : IMomoService
 
             if (!string.Equals(expectedSignature, webhookModel.Signature, StringComparison.OrdinalIgnoreCase))
             {
+                _logger.LogWarning("MoMo webhook rejected: signature mismatch. OrderId: {OrderId}, RequestId: {RequestId}", webhookModel.OrderId, webhookModel.RequestId);
                 return new BaseResponse<string>("Invalid webhook signature", "Signature verification failed");
             }
 
             await _messageQueueService.PublishMomoWebhookAsync(webhookModel, cancellationToken);
+            _logger.LogInformation("MoMo webhook queued successfully. OrderId: {OrderId}, ResultCode: {ResultCode}", webhookModel.OrderId, webhookModel.ResultCode);
 
             return new BaseResponse<string>("ok", "Webhook received and queued for processing");
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to process MoMo webhook. OrderId: {OrderId}", webhookModel.OrderId);
             return new BaseResponse<string>("Error processing webhook", ex.Message);
         }
     }
@@ -88,7 +98,9 @@ public class MomoService : IMomoService
 
     private async Task<MomoExecuteResponseModel?> CreatePaymentAsync(OrderInfoModel model)
     {
-        model.OrderId = DateTime.UtcNow.Ticks.ToString();
+        model.OrderId = string.IsNullOrWhiteSpace(model.OrderId)
+            ? DateTime.UtcNow.Ticks.ToString()
+            : model.OrderId;
         model.OrderInfo = "Khách hàng: " + model.FullName + ". Nội dung: " + model.OrderInfo;
         var rawData =
             $"partnerCode={_options.Value.PartnerCode}&accessKey={_options.Value.AccessKey}&requestId={model.OrderId}&amount={model.Amount}&orderId={model.OrderId}&orderInfo={model.OrderInfo}&returnUrl={_options.Value.ReturnUrl}&notifyUrl={_options.Value.NotifyUrl}&extraData=";
