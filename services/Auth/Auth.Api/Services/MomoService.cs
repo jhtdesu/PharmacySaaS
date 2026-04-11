@@ -31,13 +31,17 @@ public class MomoService : IMomoService
             return new BaseResponse<MomoExecuteResponseModel>("Failed to create payment");
         }
 
-        if (!string.Equals(response.ErrorCode, "0", StringComparison.OrdinalIgnoreCase))
+        var responseCode = !string.IsNullOrWhiteSpace(response.ErrorCode)
+            ? response.ErrorCode
+            : response.ResultCode?.ToString();
+
+        if (!string.Equals(responseCode, "0", StringComparison.OrdinalIgnoreCase))
         {
             var momoError = !string.IsNullOrWhiteSpace(response.LocalMessage)
                 ? response.LocalMessage
                 : response.Message;
 
-            return new BaseResponse<MomoExecuteResponseModel>($"MoMo create payment failed: {momoError ?? "Unknown error"} (errorCode: {response.ErrorCode ?? "n/a"})");
+            return new BaseResponse<MomoExecuteResponseModel>($"MoMo create payment failed: {momoError ?? "Unknown error"} (code: {responseCode ?? "n/a"})");
         }
 
         return new BaseResponse<MomoExecuteResponseModel>(response, "Payment URL created successfully");
@@ -145,12 +149,15 @@ public class MomoService : IMomoService
         var orderId = collection.FirstOrDefault(s => s.Key == "orderId").Value.FirstOrDefault() ?? string.Empty;
         var message = collection.FirstOrDefault(s => s.Key == "message").Value.FirstOrDefault() ?? string.Empty;
         var errorCode = collection.FirstOrDefault(s => s.Key == "errorCode").Value.FirstOrDefault() ?? string.Empty;
+        var resultCodeString = collection.FirstOrDefault(s => s.Key == "resultCode").Value.FirstOrDefault();
+        _ = int.TryParse(resultCodeString, out var resultCode);
 
         return new MomoExecuteResponseModel
         {
             OrderId = orderId,
             Message = message,
-            ErrorCode = errorCode
+            ErrorCode = errorCode,
+            ResultCode = string.IsNullOrWhiteSpace(resultCodeString) ? null : resultCode
         };
     }
 }

@@ -4,6 +4,7 @@ public class MomoExecuteResponseModel
 {
     public string? RequestId { get; set; }
     public string? ErrorCode { get; set; }
+    public int? ResultCode { get; set; }
     public string? OrderId { get; set; }
     public string? Message { get; set; }
     public string? LocalMessage { get; set; }
