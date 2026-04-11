@@ -31,6 +31,15 @@ public class MomoService : IMomoService
             return new BaseResponse<MomoExecuteResponseModel>("Failed to create payment");
         }
 
+        if (!string.Equals(response.ErrorCode, "0", StringComparison.OrdinalIgnoreCase))
+        {
+            var momoError = !string.IsNullOrWhiteSpace(response.LocalMessage)
+                ? response.LocalMessage
+                : response.Message;
+
+            return new BaseResponse<MomoExecuteResponseModel>($"MoMo create payment failed: {momoError ?? "Unknown error"} (errorCode: {response.ErrorCode ?? "n/a"})");
+        }
+
         return new BaseResponse<MomoExecuteResponseModel>(response, "Payment URL created successfully");
     }
 
@@ -54,11 +63,12 @@ public class MomoService : IMomoService
                 return new BaseResponse<string>("Signature is required");
             }
 
-            var rawData =
+            var v3RawData =
                 $"accessKey={webhookModel.AccessKey}&amount={webhookModel.Amount}&extraData={webhookModel.ExtraData}&message={webhookModel.Message}&orderId={webhookModel.OrderId}&orderInfo={webhookModel.OrderInfo}&orderType={webhookModel.OrderType}&partnerCode={webhookModel.PartnerCode}&payType={webhookModel.PayType}&requestId={webhookModel.RequestId}&responseTime={webhookModel.ResponseTime}&resultCode={webhookModel.ResultCode}&transId={webhookModel.TransId}";
-            var expectedSignature = ComputeHmacSha256(rawData, _options.Value.SecretKey!);
 
-            if (!string.Equals(expectedSignature, webhookModel.Signature, StringComparison.OrdinalIgnoreCase))
+            var v3ExpectedSignature = ComputeHmacSha256(v3RawData, _options.Value.SecretKey!);
+
+            if (!string.Equals(v3ExpectedSignature, webhookModel.Signature, StringComparison.OrdinalIgnoreCase))
             {
                 return new BaseResponse<string>("Signature verification failed");
             }
@@ -90,8 +100,8 @@ public class MomoService : IMomoService
 
     private async Task<MomoExecuteResponseModel?> CreatePaymentAsync(OrderInfoModel model)
     {
-        var redirectUrl = _options.Value.RedirectUrl ?? _options.Value.ReturnUrl;
-        var ipnUrl = _options.Value.IpnUrl ?? _options.Value.NotifyUrl;
+        var redirectUrl = _options.Value.RedirectUrl;
+        var ipnUrl = _options.Value.IpnUrl;
         var extraData = string.Empty;
         var amount = Convert.ToInt64(Math.Round(model.Amount, MidpointRounding.AwayFromZero));
 
@@ -104,7 +114,7 @@ public class MomoService : IMomoService
 
         var signature = ComputeHmacSha256(rawData, _options.Value.SecretKey!);
 
-        var requestData = new
+        var requestJson = JsonConvert.SerializeObject(new
         {
             accessKey = _options.Value.AccessKey,
             partnerCode = _options.Value.PartnerCode,
@@ -117,10 +127,10 @@ public class MomoService : IMomoService
             requestId = model.OrderId,
             extraData,
             signature
-        };
+        });
 
         var jsonContent = new StringContent(
-            JsonConvert.SerializeObject(requestData),
+            requestJson,
             Encoding.UTF8,
             "application/json");
 

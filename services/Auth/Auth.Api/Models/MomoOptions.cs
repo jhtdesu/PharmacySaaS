@@ -9,6 +9,4 @@ public class MomoOptions
     public string? MomoApiUrl { get; set; }
     public string? RedirectUrl { get; set; }
     public string? IpnUrl { get; set; }
-    public string? ReturnUrl { get; set; }
-    public string? NotifyUrl { get; set; }
 }
