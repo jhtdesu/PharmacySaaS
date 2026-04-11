@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 using Inventory.Application.Common.Interfaces;
 
 namespace Inventory.Api.Services;
@@ -40,7 +41,9 @@ public class TenantService : ITenantService
             throw new UnauthorizedAccessException("User is not authenticated.");
         }
 
-        var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? user.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? user.FindFirst("UserId")?.Value;
 
         if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
         {

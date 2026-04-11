@@ -104,8 +104,9 @@ public class AuthService : IAuthService
         var roles = await _userManager.GetRolesAsync(user);
         var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Email!),
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim(ClaimTypes.NameIdentifier, user.Id),
             new Claim("TenantId", user.TenantId.ToString())
         };
 

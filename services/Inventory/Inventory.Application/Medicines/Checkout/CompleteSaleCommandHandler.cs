@@ -20,9 +20,7 @@ public class CompleteSaleCommandHandler : IRequestHandler<CompleteSaleCommand, s
 
         try
         {
-            var sale = await _context.Sales
-                .Include(s => s.Items)
-                .FirstOrDefaultAsync(s => s.Id == request.SaleId, cancellationToken);
+            var sale = await _context.Sales.Include(s => s.Items).FirstOrDefaultAsync(s => s.Id == request.SaleId, cancellationToken);
 
             if (sale == null)
                 throw new Exception($"Sale with ID {request.SaleId} not found.");
@@ -37,10 +35,7 @@ public class CompleteSaleCommandHandler : IRequestHandler<CompleteSaleCommand, s
                 if (medicine == null)
                     throw new Exception($"Medicine with ID {item.MedicineId} not found.");
 
-                var batches = await _context.Batches
-                    .Where(b => b.MedicineId == medicine.Id && b.CurrentQuantity > 0 && b.ExpiryDate > DateTime.UtcNow)
-                    .OrderBy(b => b.ExpiryDate)
-                    .ToListAsync(cancellationToken);
+                var batches = await _context.Batches.Where(b => b.MedicineId == medicine.Id && b.CurrentQuantity > 0 && b.ExpiryDate > DateTime.UtcNow).OrderBy(b => b.ExpiryDate).ToListAsync(cancellationToken);
 
                 int remainingToFulfill = item.Quantity;
 
