@@ -173,12 +173,8 @@ public class MomoService : IMomoService
             return string.Empty;
         }
 
-        var metadataJson = JsonConvert.SerializeObject(new
-        {
-            saleId = originalSaleId
-        });
-
-        return Convert.ToBase64String(Encoding.UTF8.GetBytes(metadataJson));
+        var metadata = $"saleId={originalSaleId.Trim()}";
+        return Convert.ToBase64String(Encoding.UTF8.GetBytes(metadata));
     }
 
     private static MomoExecuteResponseModel PaymentExecuteAsync(IQueryCollection collection)

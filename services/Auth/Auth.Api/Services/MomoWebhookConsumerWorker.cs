@@ -165,6 +165,11 @@ public class MomoWebhookConsumerWorker : BackgroundService
             var decodedBytes = Convert.FromBase64String(normalized);
             var decodedJson = Encoding.UTF8.GetString(decodedBytes);
 
+            if (TryParseSaleIdFromKeyValue(decodedJson, out saleId))
+            {
+                return true;
+            }
+
             var metadata = JsonConvert.DeserializeObject<Dictionary<string, string>>(decodedJson);
             if (metadata is null)
             {
@@ -183,5 +188,28 @@ public class MomoWebhookConsumerWorker : BackgroundService
         {
             return false;
         }
+    }
+
+    private static bool TryParseSaleIdFromKeyValue(string decodedText, out Guid saleId)
+    {
+        saleId = Guid.Empty;
+
+        if (string.IsNullOrWhiteSpace(decodedText))
+        {
+            return false;
+        }
+
+        var parts = decodedText.Split('=', 2, StringSplitOptions.TrimEntries);
+        if (parts.Length != 2)
+        {
+            return false;
+        }
+
+        if (!parts[0].Equals("saleId", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return Guid.TryParse(parts[1], out saleId);
     }
 }
