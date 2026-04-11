@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Auth.Api.Models;
@@ -56,7 +55,7 @@ public class MomoService : IMomoService
             }
 
             var rawData =
-                $"partnerCode={webhookModel.PartnerCode}&accessKey={webhookModel.AccessKey}&requestId={webhookModel.RequestId}&amount={webhookModel.Amount}&orderId={webhookModel.OrderId}&orderInfo={webhookModel.OrderInfo}&orderType={webhookModel.OrderType}&transId={webhookModel.TransId}&message={webhookModel.Message}&resultCode={webhookModel.ResultCode}&payType={webhookModel.PayType}&responseTime={webhookModel.ResponseTime}&extraData={webhookModel.ExtraData}";
+                $"accessKey={webhookModel.AccessKey}&amount={webhookModel.Amount}&extraData={webhookModel.ExtraData}&message={webhookModel.Message}&orderId={webhookModel.OrderId}&orderInfo={webhookModel.OrderInfo}&orderType={webhookModel.OrderType}&partnerCode={webhookModel.PartnerCode}&payType={webhookModel.PayType}&requestId={webhookModel.RequestId}&responseTime={webhookModel.ResponseTime}&resultCode={webhookModel.ResultCode}&transId={webhookModel.TransId}";
             var expectedSignature = ComputeHmacSha256(rawData, _options.Value.SecretKey!);
 
             if (!string.Equals(expectedSignature, webhookModel.Signature, StringComparison.OrdinalIgnoreCase))
@@ -93,13 +92,15 @@ public class MomoService : IMomoService
     {
         var redirectUrl = _options.Value.RedirectUrl ?? _options.Value.ReturnUrl;
         var ipnUrl = _options.Value.IpnUrl ?? _options.Value.NotifyUrl;
+        var extraData = string.Empty;
+        var amount = Convert.ToInt64(Math.Round(model.Amount, MidpointRounding.AwayFromZero));
 
         model.OrderId = string.IsNullOrWhiteSpace(model.OrderId)
             ? DateTime.UtcNow.Ticks.ToString()
             : model.OrderId;
         model.OrderInfo = "Khách hàng: " + model.FullName + ". Nội dung: " + model.OrderInfo;
         var rawData =
-            $"partnerCode={_options.Value.PartnerCode}&accessKey={_options.Value.AccessKey}&requestId={model.OrderId}&amount={model.Amount}&orderId={model.OrderId}&orderInfo={model.OrderInfo}&redirectUrl={redirectUrl}&ipnUrl={ipnUrl}&extraData=";
+            $"accessKey={_options.Value.AccessKey}&amount={amount}&extraData={extraData}&ipnUrl={ipnUrl}&orderId={model.OrderId}&orderInfo={model.OrderInfo}&partnerCode={_options.Value.PartnerCode}&redirectUrl={redirectUrl}&requestId={model.OrderId}&requestType={_options.Value.RequestType}";
 
         var signature = ComputeHmacSha256(rawData, _options.Value.SecretKey!);
 
@@ -111,10 +112,10 @@ public class MomoService : IMomoService
             ipnUrl,
             redirectUrl,
             orderId = model.OrderId,
-            amount = model.Amount.ToString(CultureInfo.CurrentCulture),
+            amount,
             orderInfo = model.OrderInfo,
             requestId = model.OrderId,
-            extraData = string.Empty,
+            extraData,
             signature
         };
 
