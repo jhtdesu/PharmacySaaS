@@ -1,7 +1,12 @@
+using System;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Auth.Api.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
+using System.Net.Http;
 using Newtonsoft.Json;
 using Shared.Contracts.Models;
 
@@ -106,30 +111,37 @@ public class MomoService : IMomoService
     {
         var redirectUrl = _options.Value.RedirectUrl;
         var ipnUrl = _options.Value.IpnUrl;
-        var extraData = string.Empty;
         var amount = Convert.ToInt64(Math.Round(model.Amount, MidpointRounding.AwayFromZero));
+        var originalSaleId = model.OrderId?.Trim();
 
-        model.OrderId = string.IsNullOrWhiteSpace(model.OrderId)
+        var orderId = string.IsNullOrWhiteSpace(originalSaleId)
             ? DateTime.UtcNow.Ticks.ToString()
-            : model.OrderId;
+            : NormalizeOrderIdForMomo(originalSaleId);
+
+        var extraData = BuildExtraData(originalSaleId);
+        
+        var requestId = DateTime.UtcNow.Ticks.ToString();
+        
         model.OrderInfo = "Khách hàng: " + model.FullName + ". Nội dung: " + model.OrderInfo;
+        
         var rawData =
-            $"accessKey={_options.Value.AccessKey}&amount={amount}&extraData={extraData}&ipnUrl={ipnUrl}&orderId={model.OrderId}&orderInfo={model.OrderInfo}&partnerCode={_options.Value.PartnerCode}&redirectUrl={redirectUrl}&requestId={model.OrderId}&requestType={_options.Value.RequestType}";
+            $"accessKey={_options.Value.AccessKey}&amount={amount}&extraData={extraData}&ipnUrl={ipnUrl}&orderId={orderId}&orderInfo={model.OrderInfo}&partnerCode={_options.Value.PartnerCode}&redirectUrl={redirectUrl}&requestId={requestId}&requestType={_options.Value.RequestType}";
 
         var signature = ComputeHmacSha256(rawData, _options.Value.SecretKey!);
 
+        // Request JSON with same field order as signature for consistency
         var requestJson = JsonConvert.SerializeObject(new
         {
             accessKey = _options.Value.AccessKey,
-            partnerCode = _options.Value.PartnerCode,
-            requestType = _options.Value.RequestType,
-            ipnUrl,
-            redirectUrl,
-            orderId = model.OrderId,
             amount,
-            orderInfo = model.OrderInfo,
-            requestId = model.OrderId,
             extraData,
+            ipnUrl,
+            orderId,
+            orderInfo = model.OrderInfo,
+            partnerCode = _options.Value.PartnerCode,
+            redirectUrl,
+            requestId,
+            requestType = _options.Value.RequestType,
             signature
         });
 
@@ -144,12 +156,37 @@ public class MomoService : IMomoService
         return JsonConvert.DeserializeObject<MomoExecuteResponseModel>(responseContent);
     }
 
+    private static string NormalizeOrderIdForMomo(string orderId)
+    {
+        if (Guid.TryParse(orderId, out var guidValue))
+        {
+            return guidValue.ToString("N");
+        }
+
+        return orderId.Replace("-", string.Empty).Trim();
+    }
+
+    private static string BuildExtraData(string? originalSaleId)
+    {
+        if (string.IsNullOrWhiteSpace(originalSaleId))
+        {
+            return string.Empty;
+        }
+
+        var metadataJson = JsonConvert.SerializeObject(new
+        {
+            saleId = originalSaleId
+        });
+
+        return Convert.ToBase64String(Encoding.UTF8.GetBytes(metadataJson));
+    }
+
     private static MomoExecuteResponseModel PaymentExecuteAsync(IQueryCollection collection)
     {
         var orderId = collection.FirstOrDefault(s => s.Key == "orderId").Value.FirstOrDefault() ?? string.Empty;
         var message = collection.FirstOrDefault(s => s.Key == "message").Value.FirstOrDefault() ?? string.Empty;
         var errorCode = collection.FirstOrDefault(s => s.Key == "errorCode").Value.FirstOrDefault() ?? string.Empty;
-        var resultCodeString = collection.FirstOrDefault(s => s.Key == "resultCode").Value.FirstOrDefault();
+        var resultCodeString = collection.FirstOrDefault(s => s.Key == "resultCode").Value.FirstOrDefault()?.ToString();
         _ = int.TryParse(resultCodeString, out var resultCode);
 
         return new MomoExecuteResponseModel

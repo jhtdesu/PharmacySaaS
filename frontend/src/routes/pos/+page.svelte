@@ -108,9 +108,16 @@
                 throw new Error('Checkout response is missing order data.');
             }
 
+            const persistedFullName = localStorage.getItem('user_full_name') ?? '';
+            const resolvedFullName = (
+                checkoutData.fullName ??
+                checkoutData.FullName ??
+                persistedFullName
+            ).trim() || 'Khách hàng';
+
             const orderInfoPayload = {
                 orderId: checkoutData.orderId ?? checkoutData.OrderId,
-                fullName: checkoutData.fullName ?? checkoutData.FullName,
+                fullName: resolvedFullName,
                 amount: checkoutData.amount ?? checkoutData.Amount,
                 orderInfo: checkoutData.orderInfo ?? checkoutData.OrderInfo
             };

@@ -1,8 +1,16 @@
+using System;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Auth.Api.Models;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Collections.Generic;
 
 namespace Auth.Api.Services;
 
@@ -99,7 +107,7 @@ public class MomoWebhookConsumerWorker : BackgroundService
 
             if (webhook.ResultCode == 0)
             {
-                if (Guid.TryParse(webhook.OrderId, out var saleId))
+                if (TryResolveSaleId(webhook, out var saleId))
                 {
                     await CompleteSaleAsync(saleId);
                 }
@@ -123,5 +131,57 @@ public class MomoWebhookConsumerWorker : BackgroundService
 
         using var response = await client.PostAsJsonAsync(endpoint, new { SaleId = saleId });
         response.EnsureSuccessStatusCode();
+    }
+
+    private static bool TryResolveSaleId(MomoWebhookModel webhook, out Guid saleId)
+    {
+        if (TryParseSaleIdFromExtraData(webhook.ExtraData, out saleId))
+        {
+            return true;
+        }
+
+        return Guid.TryParse(webhook.OrderId, out saleId);
+    }
+
+    private static bool TryParseSaleIdFromExtraData(string? extraData, out Guid saleId)
+    {
+        saleId = Guid.Empty;
+
+        if (string.IsNullOrWhiteSpace(extraData))
+        {
+            return false;
+        }
+
+        try
+        {
+            var normalized = extraData.Trim();
+            var remainder = normalized.Length % 4;
+
+            if (remainder > 0)
+            {
+                normalized = normalized.PadRight(normalized.Length + (4 - remainder), '=');
+            }
+
+            var decodedBytes = Convert.FromBase64String(normalized);
+            var decodedJson = Encoding.UTF8.GetString(decodedBytes);
+
+            var metadata = JsonConvert.DeserializeObject<Dictionary<string, string>>(decodedJson);
+            if (metadata is null)
+            {
+                return false;
+            }
+
+            metadata.TryGetValue("saleId", out var saleIdText);
+            if (string.IsNullOrWhiteSpace(saleIdText))
+            {
+                metadata.TryGetValue("SaleId", out saleIdText);
+            }
+
+            return Guid.TryParse(saleIdText, out saleId);
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

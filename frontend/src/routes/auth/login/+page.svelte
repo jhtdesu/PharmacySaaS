@@ -19,9 +19,13 @@
 
             const token = response.data.data.accessToken;
             const refresh = response.data.data.refreshToken;
+            const fullName = response.data.data.fullName ?? response.data.data.FullName;
             
             localStorage.setItem('jwt_token', token);
             localStorage.setItem('refresh_token', refresh);
+            if (fullName) {
+                localStorage.setItem('user_full_name', fullName);
+            }
 
             goto('/homepage'); 
         } catch (error: any) {
