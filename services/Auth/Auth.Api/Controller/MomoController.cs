@@ -39,8 +39,8 @@ public class MomoController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Webhook([FromBody] MomoWebhookModel webhook, CancellationToken cancellationToken)
     {
-        var response = await _momoService.BuildWebhookResponseAsync(webhook, cancellationToken);
-        return response.Success ? Ok(response) : BadRequest(response);
+        await _momoService.BuildWebhookResponseAsync(webhook, cancellationToken);
+        return NoContent();
     }
 }
 
