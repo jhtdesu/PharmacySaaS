@@ -1,196 +1,156 @@
-using System;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Text.Json;
 using Auth.Api.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
-using System.Net.Http;
-using Newtonsoft.Json;
 using Shared.Contracts.Models;
 
 namespace Auth.Api.Services;
 
 public class MomoService : IMomoService
 {
-    private readonly IOptions<MomoOptions> _options;
-    private readonly HttpClient _httpClient;
-    private readonly IMessageQueueService _messageQueueService;
+	private readonly IHttpClientFactory _httpClientFactory;
+	private readonly MomoOptions _momoOptions;
 
-    public MomoService(
-        IOptions<MomoOptions> options,
-        HttpClient httpClient,
-        IMessageQueueService messageQueueService)
-    {
-        _options = options;
-        _httpClient = httpClient;
-        _messageQueueService = messageQueueService;
-    }
+	public MomoService(IHttpClientFactory httpClientFactory, IOptions<MomoOptions> momoOptions)
+	{
+		_httpClientFactory = httpClientFactory;
+		_momoOptions = momoOptions.Value;
+	}
 
-    public async Task<BaseResponse<MomoExecuteResponseModel>> CreatePaymentUrlAsync(OrderInfoModel model)
-    {
-        var response = await CreatePaymentAsync(model);
-        if (response == null)
-        {
-            return new BaseResponse<MomoExecuteResponseModel>("Failed to create payment");
-        }
+	public async Task<BaseResponse<MomoCreatePaymentResponseModel>> CreatePaymentAsync(OrderInfoModel order, CancellationToken cancellationToken = default)
+	{
+		if (!ValidateConfiguration(out var configurationError))
+		{
+			return new BaseResponse<MomoCreatePaymentResponseModel>(configurationError);
+		}
 
-        var responseCode = !string.IsNullOrWhiteSpace(response.ErrorCode)
-            ? response.ErrorCode
-            : response.ResultCode?.ToString();
+		if (string.IsNullOrWhiteSpace(order.OrderId))
+		{
+			return new BaseResponse<MomoCreatePaymentResponseModel>("OrderId is required.");
+		}
 
-        if (!string.Equals(responseCode, "0", StringComparison.OrdinalIgnoreCase))
-        {
-            var momoError = !string.IsNullOrWhiteSpace(response.LocalMessage)
-                ? response.LocalMessage
-                : response.Message;
+		if (order.Amount <= 0)
+		{
+			return new BaseResponse<MomoCreatePaymentResponseModel>("Amount must be greater than zero.");
+		}
 
-            return new BaseResponse<MomoExecuteResponseModel>($"MoMo create payment failed: {momoError ?? "Unknown error"} (code: {responseCode ?? "n/a"})");
-        }
+		var requestId = Guid.NewGuid().ToString("N");
+		var amount = Convert.ToInt64(decimal.Round(order.Amount, 0, MidpointRounding.AwayFromZero));
+		var requestType = string.IsNullOrWhiteSpace(_momoOptions.RequestType) ? "captureWallet" : _momoOptions.RequestType!;
+		var lang = string.IsNullOrWhiteSpace(_momoOptions.Lang) ? "vi" : _momoOptions.Lang!;
+		var orderInfo = string.IsNullOrWhiteSpace(order.OrderInfo) ? $"Payment for order {order.OrderId}" : order.OrderInfo!;
 
-        return new BaseResponse<MomoExecuteResponseModel>(response, "Payment URL created successfully");
-    }
+		var extraDataJson = JsonSerializer.Serialize(new { saleId = order.OrderId, fullName = order.FullName ?? string.Empty });
+		var extraData = Convert.ToBase64String(Encoding.UTF8.GetBytes(extraDataJson));
 
-    public BaseResponse<MomoExecuteResponseModel> BuildCallbackResponse(IQueryCollection collection)
-    {
-        var response = PaymentExecuteAsync(collection);
-        return new BaseResponse<MomoExecuteResponseModel>(response, "Payment callback processed");
-    }
+		var rawSignature =
+			$"accessKey={_momoOptions.AccessKey}" +
+			$"&amount={amount}" +
+			$"&extraData={extraData}" +
+			$"&ipnUrl={_momoOptions.IpnUrl}" +
+			$"&orderId={order.OrderId}" +
+			$"&orderInfo={orderInfo}" +
+			$"&partnerCode={_momoOptions.PartnerCode}" +
+			$"&redirectUrl={_momoOptions.RedirectUrl}" +
+			$"&requestId={requestId}" +
+			$"&requestType={requestType}";
 
-    public BaseResponse<string> BuildNotificationResponse()
-    {
-        return new BaseResponse<string>("ok", "MoMo notification received");
-    }
+		var signature = GenerateHmacSha256(rawSignature, _momoOptions.SecretKey!);
 
-    public async Task<BaseResponse<string>> BuildWebhookResponseAsync(MomoWebhookModel webhookModel, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(webhookModel.Signature))
-            {
-                return new BaseResponse<string>("Signature is required");
-            }
+		var payload = new
+		{
+			partnerCode = _momoOptions.PartnerCode,
+			accessKey = _momoOptions.AccessKey,
+			requestId,
+			amount,
+			orderId = order.OrderId,
+			orderInfo,
+			redirectUrl = _momoOptions.RedirectUrl,
+			ipnUrl = _momoOptions.IpnUrl,
+			lang,
+			requestType,
+			autoCapture = _momoOptions.AutoCapture,
+			extraData,
+			signature
+		};
 
-            var v3RawData =
-                $"accessKey={webhookModel.AccessKey}&amount={webhookModel.Amount}&extraData={webhookModel.ExtraData}&message={webhookModel.Message}&orderId={webhookModel.OrderId}&orderInfo={webhookModel.OrderInfo}&orderType={webhookModel.OrderType}&partnerCode={webhookModel.PartnerCode}&payType={webhookModel.PayType}&requestId={webhookModel.RequestId}&responseTime={webhookModel.ResponseTime}&resultCode={webhookModel.ResultCode}&transId={webhookModel.TransId}";
+		var client = _httpClientFactory.CreateClient();
+		client.Timeout = TimeSpan.FromSeconds(30);
 
-            var v3ExpectedSignature = ComputeHmacSha256(v3RawData, _options.Value.SecretKey!);
+		using var response = await client.PostAsJsonAsync(_momoOptions.MomoApiUrl!, payload, cancellationToken);
+		var momoResponse = await response.Content.ReadFromJsonAsync<MomoCreatePaymentResponseModel>(cancellationToken: cancellationToken);
 
-            if (!string.Equals(v3ExpectedSignature, webhookModel.Signature, StringComparison.OrdinalIgnoreCase))
-            {
-                return new BaseResponse<string>("Signature verification failed");
-            }
+		if (!response.IsSuccessStatusCode)
+		{
+			var message = momoResponse?.Message ?? $"MoMo API call failed with status {(int)response.StatusCode}.";
+			return new BaseResponse<MomoCreatePaymentResponseModel>(message);
+		}
 
-            await _messageQueueService.PublishMomoWebhookAsync(webhookModel, cancellationToken);
+		if (momoResponse is null)
+		{
+			return new BaseResponse<MomoCreatePaymentResponseModel>("MoMo API returned an empty response.");
+		}
 
-            return new BaseResponse<string>("ok", "Webhook received and queued for processing");
-        }
-        catch (Exception ex)
-        {
-            return new BaseResponse<string>($"Error processing webhook: {ex.Message}");
-        }
-    }
+		if (momoResponse.ResultCode != 0)
+		{
+			return new BaseResponse<MomoCreatePaymentResponseModel>(momoResponse.Message ?? "MoMo returned an unsuccessful payment initialization result.");
+		}
 
-    private string ComputeHmacSha256(string message, string secretKey)
-    {
-        var keyBytes = Encoding.UTF8.GetBytes(secretKey);
-        var messageBytes = Encoding.UTF8.GetBytes(message);
+		return new BaseResponse<MomoCreatePaymentResponseModel>(momoResponse, "MoMo payment link created successfully.");
+	}
 
-        byte[] hashBytes;
+	public bool IsValidWebhookSignature(MomoWebhookModel webhook)
+	{
+		if (!ValidateConfiguration(out _) || string.IsNullOrWhiteSpace(webhook.Signature))
+		{
+			return false;
+		}
 
-        using (var hmac = new HMACSHA256(keyBytes))
-        {
-            hashBytes = hmac.ComputeHash(messageBytes);
-        }
+		var rawSignature =
+			$"accessKey={_momoOptions.AccessKey}" +
+			$"&amount={webhook.Amount ?? 0}" +
+			$"&extraData={webhook.ExtraData ?? string.Empty}" +
+			$"&message={webhook.Message ?? string.Empty}" +
+			$"&orderId={webhook.OrderId ?? string.Empty}" +
+			$"&orderInfo={webhook.OrderInfo ?? string.Empty}" +
+			$"&orderType={webhook.OrderType ?? string.Empty}" +
+			$"&partnerCode={webhook.PartnerCode ?? string.Empty}" +
+			$"&payType={webhook.PayType ?? string.Empty}" +
+			$"&requestId={webhook.RequestId ?? string.Empty}" +
+			$"&responseTime={webhook.ResponseTime ?? 0}" +
+			$"&resultCode={webhook.ResultCode ?? -1}" +
+			$"&transId={webhook.TransId ?? 0}";
 
-        return BitConverter.ToString(hashBytes).Replace("-", string.Empty).ToLower();
-    }
+		var expectedSignature = GenerateHmacSha256(rawSignature, _momoOptions.SecretKey!);
+		return string.Equals(expectedSignature, webhook.Signature, StringComparison.OrdinalIgnoreCase);
+	}
 
-    private async Task<MomoExecuteResponseModel?> CreatePaymentAsync(OrderInfoModel model)
-    {
-        var redirectUrl = _options.Value.RedirectUrl;
-        var ipnUrl = _options.Value.IpnUrl;
-        var amount = Convert.ToInt64(Math.Round(model.Amount, MidpointRounding.AwayFromZero));
-        var originalSaleId = model.OrderId?.Trim();
+	private bool ValidateConfiguration(out string error)
+	{
+		if (string.IsNullOrWhiteSpace(_momoOptions.PartnerCode) ||
+			string.IsNullOrWhiteSpace(_momoOptions.AccessKey) ||
+			string.IsNullOrWhiteSpace(_momoOptions.SecretKey) ||
+			string.IsNullOrWhiteSpace(_momoOptions.MomoApiUrl) ||
+			string.IsNullOrWhiteSpace(_momoOptions.RedirectUrl) ||
+			string.IsNullOrWhiteSpace(_momoOptions.IpnUrl))
+		{
+			error = "MoMo API configuration is incomplete.";
+			return false;
+		}
 
-        var orderId = string.IsNullOrWhiteSpace(originalSaleId)
-            ? DateTime.UtcNow.Ticks.ToString()
-            : NormalizeOrderIdForMomo(originalSaleId);
+		error = string.Empty;
+		return true;
+	}
 
-        var extraData = BuildExtraData(originalSaleId);
-        
-        var requestId = DateTime.UtcNow.Ticks.ToString();
-        
-        model.OrderInfo = "Khách hàng: " + model.FullName + ". Nội dung: " + model.OrderInfo;
-        
-        var rawData =
-            $"accessKey={_options.Value.AccessKey}&amount={amount}&extraData={extraData}&ipnUrl={ipnUrl}&orderId={orderId}&orderInfo={model.OrderInfo}&partnerCode={_options.Value.PartnerCode}&redirectUrl={redirectUrl}&requestId={requestId}&requestType={_options.Value.RequestType}";
+	private static string GenerateHmacSha256(string data, string secret)
+	{
+		var keyBytes = Encoding.UTF8.GetBytes(secret);
+		var dataBytes = Encoding.UTF8.GetBytes(data);
 
-        var signature = ComputeHmacSha256(rawData, _options.Value.SecretKey!);
+		using var hmac = new HMACSHA256(keyBytes);
+		var hashBytes = hmac.ComputeHash(dataBytes);
 
-        // Request JSON with same field order as signature for consistency
-        var requestJson = JsonConvert.SerializeObject(new
-        {
-            accessKey = _options.Value.AccessKey,
-            amount,
-            extraData,
-            ipnUrl,
-            orderId,
-            orderInfo = model.OrderInfo,
-            partnerCode = _options.Value.PartnerCode,
-            redirectUrl,
-            requestId,
-            requestType = _options.Value.RequestType,
-            signature
-        });
-
-        var jsonContent = new StringContent(
-            requestJson,
-            Encoding.UTF8,
-            "application/json");
-
-        var response = await _httpClient.PostAsync(_options.Value.MomoApiUrl, jsonContent);
-        var responseContent = await response.Content.ReadAsStringAsync();
-
-        return JsonConvert.DeserializeObject<MomoExecuteResponseModel>(responseContent);
-    }
-
-    private static string NormalizeOrderIdForMomo(string orderId)
-    {
-        if (Guid.TryParse(orderId, out var guidValue))
-        {
-            return guidValue.ToString("N");
-        }
-
-        return orderId.Replace("-", string.Empty).Trim();
-    }
-
-    private static string BuildExtraData(string? originalSaleId)
-    {
-        if (string.IsNullOrWhiteSpace(originalSaleId))
-        {
-            return string.Empty;
-        }
-
-        var metadata = $"saleId={originalSaleId.Trim()}";
-        return Convert.ToBase64String(Encoding.UTF8.GetBytes(metadata));
-    }
-
-    private static MomoExecuteResponseModel PaymentExecuteAsync(IQueryCollection collection)
-    {
-        var orderId = collection.FirstOrDefault(s => s.Key == "orderId").Value.FirstOrDefault() ?? string.Empty;
-        var message = collection.FirstOrDefault(s => s.Key == "message").Value.FirstOrDefault() ?? string.Empty;
-        var errorCode = collection.FirstOrDefault(s => s.Key == "errorCode").Value.FirstOrDefault() ?? string.Empty;
-        var resultCodeString = collection.FirstOrDefault(s => s.Key == "resultCode").Value.FirstOrDefault()?.ToString();
-        _ = int.TryParse(resultCodeString, out var resultCode);
-
-        return new MomoExecuteResponseModel
-        {
-            OrderId = orderId,
-            Message = message,
-            ErrorCode = errorCode,
-            ResultCode = string.IsNullOrWhiteSpace(resultCodeString) ? null : resultCode
-        };
-    }
+		return Convert.ToHexString(hashBytes).ToLowerInvariant();
+	}
 }

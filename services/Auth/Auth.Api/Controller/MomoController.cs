@@ -1,7 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using Auth.Api.Models;
 using Auth.Api.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Shared.Contracts.Models;
 
 namespace Auth.Api.Controller;
 
@@ -9,38 +10,40 @@ namespace Auth.Api.Controller;
 [Route("api/[controller]")]
 public class MomoController : ControllerBase
 {
-    private readonly IMomoService _momoService;
+	private readonly IMomoService _momoService;
+	private readonly IMessageQueueService _messageQueueService;
 
-    public MomoController(IMomoService momoService)
-    {
-        _momoService = momoService;
-    }
+	public MomoController(IMomoService momoService, IMessageQueueService messageQueueService)
+	{
+		_momoService = momoService;
+		_messageQueueService = messageQueueService;
+	}
 
-    [HttpPost]
-    public async Task<IActionResult> CreatePaymentUrl(OrderInfoModel model)
-    {
-        var response = await _momoService.CreatePaymentUrlAsync(model);
-        return Ok(response);
-    }
+	[HttpPost]
+	[Authorize]
+	public async Task<ActionResult<BaseResponse<MomoCreatePaymentResponseModel>>> CreatePayment(
+		[FromBody] OrderInfoModel order,
+		CancellationToken cancellationToken)
+	{
+		var response = await _momoService.CreatePaymentAsync(order, cancellationToken);
+		if (!response.Success)
+		{
+			return BadRequest(response);
+		}
 
-    [HttpGet("callback")]
-    public IActionResult PaymentCallBack()
-    {
-        return Ok(_momoService.BuildCallbackResponse(HttpContext.Request.Query));
-    }
+		return Ok(response);
+	}
 
-    [HttpPost("notify")]
-    public IActionResult PaymentNotify()
-    {
-        return Ok(_momoService.BuildNotificationResponse());
-    }
+	[HttpPost("webhook")]
+	[AllowAnonymous]
+	public async Task<IActionResult> ReceiveWebhook([FromBody] MomoWebhookModel webhook, CancellationToken cancellationToken)
+	{
+		if (!_momoService.IsValidWebhookSignature(webhook))
+		{
+			return BadRequest(new BaseResponse<object>("Invalid MoMo signature."));
+		}
 
-    [HttpPost("webhook")]
-    [AllowAnonymous]
-    public async Task<IActionResult> Webhook([FromBody] MomoWebhookModel webhook, CancellationToken cancellationToken)
-    {
-        await _momoService.BuildWebhookResponseAsync(webhook, cancellationToken);
-        return NoContent();
-    }
+		await _messageQueueService.PublishMomoWebhookAsync(webhook, cancellationToken);
+		return Ok(new BaseResponse<object>(null!, "Webhook received."));
+	}
 }
-

@@ -9,4 +9,6 @@ public class MomoOptions
     public string? MomoApiUrl { get; set; }
     public string? RedirectUrl { get; set; }
     public string? IpnUrl { get; set; }
+    public string? Lang { get; set; }
+    public bool AutoCapture { get; set; } = true;
 }

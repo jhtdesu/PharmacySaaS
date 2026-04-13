@@ -9,10 +9,9 @@ public class MomoWebhookModel
     public long? Amount { get; set; }
     public string? OrderInfo { get; set; }
     public string? OrderType { get; set; }
-    public string? TransId { get; set; }
+    public long? TransId { get; set; }
     public string? Message { get; set; }
     public int? ResultCode { get; set; }
-    public string? ResultDesc { get; set; }
     public string? Signature { get; set; }
     public string? PayType { get; set; }
     public long? ResponseTime { get; set; }
