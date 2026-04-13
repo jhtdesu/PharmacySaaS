@@ -43,11 +43,11 @@ public class MomoController : ControllerBase
 		return Ok(response);
 	}
 
-	[HttpGet("webhook")]
-	public async Task<IActionResult> Webhook([FromQuery] MomoWebhookModel webhook)
+	[HttpPost("webhook")]
+	public async Task<IActionResult> Webhook([FromBody] MomoWebhookModel webhook)
 	{
 		if (!_momoService.IsValidWebhookSignature(webhook))
-			return BadRequest("Invalid webhook signature");
+			return StatusCode(204);
 
 		if (webhook.ResultCode == 0)
 		{
@@ -64,6 +64,6 @@ public class MomoController : ControllerBase
 			await _messageQueueService.PublishPaymentSuccessAsync(message);
 		}
 
-		return Ok(new { Message = "Webhook received" });
+		return StatusCode(204);
 	}
 }
