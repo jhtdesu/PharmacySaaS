@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Microsoft.Extensions.Options;
 using Shared.Contracts.ExceptionHandling;
 using Shared.Contracts.Configuration;
 
@@ -62,8 +63,22 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddScoped<IMomoService, MomoService>();
+builder.Services.AddScoped<IMomoWebhookService, MomoWebhookService>();
+builder.Services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
+builder.Services.AddHostedService<MomoPaymentWorkerService>();
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient("InventoryApi", (serviceProvider, client) =>
+{
+    var inventoryApiOptions = serviceProvider.GetRequiredService<IOptions<InventoryApiOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(inventoryApiOptions.BaseUrl))
+    {
+        client.BaseAddress = new Uri(inventoryApiOptions.BaseUrl, UriKind.Absolute);
+    }
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 builder.Services.Configure<MomoOptions>(builder.Configuration.GetSection("MomoAPI"));
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMQ"));
+builder.Services.Configure<InventoryApiOptions>(builder.Configuration.GetSection("InventoryApi"));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
