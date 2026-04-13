@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
-using RabbitMQ.Client;
 using Shared.Contracts.ExceptionHandling;
 using Shared.Contracts.Configuration;
 
@@ -58,28 +57,6 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(secretKey)
     };
 });
-
-// RabbitMQ Connection
-var rabbitMqSettings = builder.Configuration.GetSection("RabbitMQ");
-var rabbitMqHost = rabbitMqSettings["Host"] ?? "rabbitmq";
-var rabbitMqPort = int.TryParse(rabbitMqSettings["Port"], out var port) ? port : 5672;
-var rabbitMqUser = rabbitMqSettings["User"] ?? "guest";
-var rabbitMqPassword = rabbitMqSettings["Password"] ?? "guest";
-
-var connectionFactory = new ConnectionFactory
-{
-    HostName = rabbitMqHost,
-    Port = rabbitMqPort,
-    UserName = rabbitMqUser,
-    Password = rabbitMqPassword,
-    AutomaticRecoveryEnabled = true,
-    NetworkRecoveryInterval = TimeSpan.FromSeconds(10)
-};
-
-builder.Services.AddSingleton<IConnectionFactory>(connectionFactory);
-
-builder.Services.AddScoped<IMessageQueueService, RabbitMqMessageQueueService>();
-builder.Services.AddHostedService<MomoPaymentWorkerService>();
 
 builder.Services.AddControllers();
 builder.Services.AddScoped<IAuthService, AuthService>();

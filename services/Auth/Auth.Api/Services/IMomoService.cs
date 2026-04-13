@@ -6,5 +6,4 @@ namespace Auth.Api.Services;
 public interface IMomoService
 {
     Task<BaseResponse<MomoCreatePaymentResponseModel>> CreatePaymentAsync(OrderInfoModel order, CancellationToken cancellationToken = default);
-    bool IsValidWebhookSignature(MomoWebhookModel webhook);
 }
