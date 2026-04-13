@@ -28,6 +28,19 @@ public class CompleteSaleCommandHandler : IRequestHandler<CompleteSaleCommand, s
             if (sale == null)
                 throw new Exception($"Sale with ID {request.SaleId} not found.");
 
+            if (sale.SaleStatus == SaleStatus.Completed)
+            {
+                if (string.IsNullOrWhiteSpace(sale.ReceiptNumber))
+                {
+                    sale.ReceiptNumber = BuildReceiptNumber(sale.Id);
+                    _context.Sales.Update(sale);
+                    await _context.SaveChangesAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
+                }
+
+                return sale.ReceiptNumber;
+            }
+
             if (sale.SaleStatus != SaleStatus.Pending)
                 throw new Exception($"Sale is not in Pending status. Current status: {sale.SaleStatus}.");
 
@@ -57,6 +70,11 @@ public class CompleteSaleCommandHandler : IRequestHandler<CompleteSaleCommand, s
                 }
             }
 
+            if (string.IsNullOrWhiteSpace(sale.ReceiptNumber))
+            {
+                sale.ReceiptNumber = BuildReceiptNumber(sale.Id);
+            }
+
             sale.SaleStatus = SaleStatus.Completed;
 
             _context.Sales.Update(sale);
@@ -70,5 +88,10 @@ public class CompleteSaleCommandHandler : IRequestHandler<CompleteSaleCommand, s
             await transaction.RollbackAsync(cancellationToken);
             throw;
         }
+    }
+
+    private static string BuildReceiptNumber(Guid saleId)
+    {
+        return $"RCPT-{DateTime.UtcNow:yyyyMMddHHmmss}-{saleId.ToString("N")[..6].ToUpperInvariant()}";
     }
 }
