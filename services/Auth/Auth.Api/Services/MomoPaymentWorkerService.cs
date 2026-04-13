@@ -28,12 +28,20 @@ public class MomoPaymentWorkerService : BackgroundService
                 using var scope = _serviceProvider.CreateScope();
                 var messageQueueService = scope.ServiceProvider.GetRequiredService<IMessageQueueService>();
 
-                var message = await messageQueueService.ConsumePaymentSuccessAsync(stoppingToken);
-
-                if (message?.OrderId != null && message.ResultCode == 0)
+                await messageQueueService.ProcessNextPaymentSuccessAsync(async (message, token) =>
                 {
-                    await CompletePaymentAsync(Guid.Parse(message.OrderId), stoppingToken);
-                }
+                    if (message.ResultCode != 0 || string.IsNullOrWhiteSpace(message.OrderId))
+                    {
+                        return true;
+                    }
+
+                    if (!Guid.TryParse(message.OrderId, out var saleId))
+                    {
+                        return true;
+                    }
+
+                    return await CompletePaymentAsync(saleId, token);
+                }, stoppingToken);
 
                 await Task.Delay(1000, stoppingToken);
             }
@@ -48,7 +56,7 @@ public class MomoPaymentWorkerService : BackgroundService
         }
     }
 
-    private async Task CompletePaymentAsync(Guid saleId, CancellationToken cancellationToken)
+    private async Task<bool> CompletePaymentAsync(Guid saleId, CancellationToken cancellationToken)
     {
         try
         {
@@ -59,10 +67,11 @@ public class MomoPaymentWorkerService : BackgroundService
             var payload = new { SaleId = saleId };
             var response = await client.PostAsJsonAsync(inventoryApiUrl, payload, cancellationToken);
             response.EnsureSuccessStatusCode();
+            return true;
         }
         catch
         {
-            // Retry on next cycle
+            return false;
         }
     }
 }

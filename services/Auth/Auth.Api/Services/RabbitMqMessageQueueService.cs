@@ -24,10 +24,18 @@ public class RabbitMqMessageQueueService : IMessageQueueService
         var json = JsonSerializer.Serialize(message);
         var body = System.Text.Encoding.UTF8.GetBytes(json);
 
-        await channel.BasicPublishAsync(exchange: string.Empty, routingKey: _queueName, body: body);
+        var properties = new BasicProperties
+        {
+            Persistent = true,
+            ContentType = "application/json"
+        };
+
+        await channel.BasicPublishAsync(exchange: "", routingKey: _queueName, mandatory: false, basicProperties: properties, body: body);
     }
 
-    public async Task<MomoPaymentMessage?> ConsumePaymentSuccessAsync(CancellationToken cancellationToken)
+    public async Task ProcessNextPaymentSuccessAsync(
+        Func<MomoPaymentMessage, CancellationToken, Task<bool>> handler,
+        CancellationToken cancellationToken)
     {
         try
         {
@@ -40,18 +48,31 @@ public class RabbitMqMessageQueueService : IMessageQueueService
             var result = await channel.BasicGetAsync(queue: _queueName, autoAck: false);
 
             if (result == null)
-                return null;
+                return;
 
             var json = System.Text.Encoding.UTF8.GetString(result.Body.ToArray());
             var message = JsonSerializer.Deserialize<MomoPaymentMessage>(json);
 
-            await channel.BasicAckAsync(result.DeliveryTag, false);
+            if (message == null)
+            {
+                await channel.BasicNackAsync(result.DeliveryTag, false, true);
+                return;
+            }
 
-            return message;
+            var processed = await handler(message, cancellationToken);
+
+            if (processed)
+            {
+                await channel.BasicAckAsync(result.DeliveryTag, false);
+            }
+            else
+            {
+                await channel.BasicNackAsync(result.DeliveryTag, false, true);
+            }
         }
         catch
         {
-            return null;
+            return;
         }
     }
 }

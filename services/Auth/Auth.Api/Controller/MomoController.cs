@@ -44,6 +44,7 @@ public class MomoController : ControllerBase
 	}
 
 	[HttpPost("webhook")]
+    [AllowAnonymous]
 	public async Task<IActionResult> Webhook([FromBody] MomoWebhookModel webhook)
 	{
 		if (!_momoService.IsValidWebhookSignature(webhook))
@@ -65,5 +66,12 @@ public class MomoController : ControllerBase
 		}
 
 		return StatusCode(204);
+	}
+
+	[HttpGet("webhook/health")]
+	[AllowAnonymous]
+	public IActionResult WebhookHealth()
+	{
+		return Ok(new { status = "ok", timestamp = DateTime.UtcNow });
 	}
 }
