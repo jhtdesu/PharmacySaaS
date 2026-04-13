@@ -7,22 +7,18 @@ namespace Auth.Api.Services;
 public class RabbitMqMessageQueueService : IMessageQueueService
 {
     private readonly IConnectionFactory _connectionFactory;
-    private readonly ILogger<RabbitMqMessageQueueService> _logger;
     private const string MomoWebhookExchange = "momo.events";
     private const string MomoWebhookQueue = "momo.webhook.queue";
     private const string MomoWebhookRoutingKey = "momo.webhook.received";
 
-    public RabbitMqMessageQueueService(IConnectionFactory connectionFactory, ILogger<RabbitMqMessageQueueService> logger)
+    public RabbitMqMessageQueueService(IConnectionFactory connectionFactory)
     {
         _connectionFactory = connectionFactory;
-        _logger = logger;
         InitializeQueueAsync().GetAwaiter().GetResult();
     }
 
     private async Task InitializeQueueAsync()
     {
-        _logger.LogInformation("Initializing MoMo RabbitMQ exchange {Exchange}, queue {Queue}, routing key {RoutingKey}.", MomoWebhookExchange, MomoWebhookQueue, MomoWebhookRoutingKey);
-
         await using var connection = await _connectionFactory.CreateConnectionAsync();
         await using var channel = await connection.CreateChannelAsync();
             
@@ -43,14 +39,10 @@ public class RabbitMqMessageQueueService : IMessageQueueService
             queue: MomoWebhookQueue,
             exchange: MomoWebhookExchange,
             routingKey: MomoWebhookRoutingKey);
-
-        _logger.LogInformation("MoMo RabbitMQ queue initialization completed.");
     }
 
     public async Task PublishMomoWebhookAsync(object message, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Publishing MoMo webhook message to RabbitMQ.");
-
         await using var connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
         await using var channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken);
             
@@ -71,7 +63,5 @@ public class RabbitMqMessageQueueService : IMessageQueueService
             basicProperties: properties,
             body: body,
             cancellationToken: cancellationToken);
-
-        _logger.LogInformation("Published MoMo webhook message to RabbitMQ exchange {Exchange} with routing key {RoutingKey}.", MomoWebhookExchange, MomoWebhookRoutingKey);
     }
 }

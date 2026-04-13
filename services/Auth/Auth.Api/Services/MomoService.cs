@@ -11,37 +11,27 @@ public class MomoService : IMomoService
 {
 	private readonly IHttpClientFactory _httpClientFactory;
 	private readonly MomoOptions _momoOptions;
-	private readonly ILogger<MomoService> _logger;
 
-	public MomoService(
-		IHttpClientFactory httpClientFactory,
-		IOptions<MomoOptions> momoOptions,
-		ILogger<MomoService> logger)
+	public MomoService(IHttpClientFactory httpClientFactory, IOptions<MomoOptions> momoOptions)
 	{
 		_httpClientFactory = httpClientFactory;
 		_momoOptions = momoOptions.Value;
-		_logger = logger;
 	}
 
 	public async Task<BaseResponse<MomoCreatePaymentResponseModel>> CreatePaymentAsync(OrderInfoModel order, CancellationToken cancellationToken = default)
 	{
-		_logger.LogInformation("Preparing MoMo payment request for OrderId={OrderId}, Amount={Amount}.", order.OrderId, order.Amount);
-
 		if (!ValidateConfiguration(out var configurationError))
 		{
-			_logger.LogWarning("MoMo payment request blocked by configuration validation: {Error}", configurationError);
 			return new BaseResponse<MomoCreatePaymentResponseModel>(configurationError);
 		}
 
 		if (string.IsNullOrWhiteSpace(order.OrderId))
 		{
-			_logger.LogWarning("MoMo payment request blocked because OrderId was empty.");
 			return new BaseResponse<MomoCreatePaymentResponseModel>("OrderId is required.");
 		}
 
 		if (order.Amount <= 0)
 		{
-			_logger.LogWarning("MoMo payment request blocked because Amount was invalid: {Amount}.", order.Amount);
 			return new BaseResponse<MomoCreatePaymentResponseModel>("Amount must be greater than zero.");
 		}
 
@@ -67,7 +57,6 @@ public class MomoService : IMomoService
 			$"&requestType={requestType}";
 
 		var signature = GenerateHmacSha256(rawSignature, _momoOptions.SecretKey!);
-		_logger.LogDebug("Generated MoMo payment signature for OrderId={OrderId}.", order.OrderId);
 
 		var payload = new
 		{
@@ -90,39 +79,31 @@ public class MomoService : IMomoService
 		client.Timeout = TimeSpan.FromSeconds(30);
 
 		using var response = await client.PostAsJsonAsync(_momoOptions.MomoApiUrl!, payload, cancellationToken);
-		_logger.LogInformation("MoMo create-payment request sent for OrderId={OrderId}; status code {StatusCode}.", order.OrderId, (int)response.StatusCode);
 		var momoResponse = await response.Content.ReadFromJsonAsync<MomoCreatePaymentResponseModel>(cancellationToken: cancellationToken);
 
 		if (!response.IsSuccessStatusCode)
 		{
 			var message = momoResponse?.Message ?? $"MoMo API call failed with status {(int)response.StatusCode}.";
-			_logger.LogWarning("MoMo create-payment API returned non-success for OrderId={OrderId}: {Message}", order.OrderId, message);
 			return new BaseResponse<MomoCreatePaymentResponseModel>(message);
 		}
 
 		if (momoResponse is null)
 		{
-			_logger.LogWarning("MoMo create-payment API returned an empty body for OrderId={OrderId}.", order.OrderId);
 			return new BaseResponse<MomoCreatePaymentResponseModel>("MoMo API returned an empty response.");
 		}
 
 		if (momoResponse.ResultCode != 0)
 		{
-			_logger.LogWarning("MoMo create-payment API returned ResultCode={ResultCode} for OrderId={OrderId}: {Message}", momoResponse.ResultCode, order.OrderId, momoResponse.Message);
 			return new BaseResponse<MomoCreatePaymentResponseModel>(momoResponse.Message ?? "MoMo returned an unsuccessful payment initialization result.");
 		}
 
-		_logger.LogInformation("MoMo payment link created successfully for OrderId={OrderId}.", order.OrderId);
 		return new BaseResponse<MomoCreatePaymentResponseModel>(momoResponse, "MoMo payment link created successfully.");
 	}
 
 	public bool IsValidWebhookSignature(MomoWebhookModel webhook)
 	{
-		_logger.LogDebug("Validating MoMo webhook signature for OrderId={OrderId}, RequestId={RequestId}, ResultCode={ResultCode}.", webhook.OrderId, webhook.RequestId, webhook.ResultCode);
-
 		if (!ValidateConfiguration(out _) || string.IsNullOrWhiteSpace(webhook.Signature))
 		{
-			_logger.LogWarning("MoMo webhook signature validation failed early for OrderId={OrderId}, RequestId={RequestId}. Missing config or signature.", webhook.OrderId, webhook.RequestId);
 			return false;
 		}
 
@@ -142,7 +123,6 @@ public class MomoService : IMomoService
 			$"&transId={webhook.TransId ?? 0}";
 
 		var expectedSignature = GenerateHmacSha256(rawSignature, _momoOptions.SecretKey!);
-		_logger.LogDebug("MoMo webhook signature comparison completed for OrderId={OrderId}, RequestId={RequestId}.", webhook.OrderId, webhook.RequestId);
 		return string.Equals(expectedSignature, webhook.Signature, StringComparison.OrdinalIgnoreCase);
 	}
 
@@ -156,13 +136,6 @@ public class MomoService : IMomoService
 			string.IsNullOrWhiteSpace(_momoOptions.IpnUrl))
 		{
 			error = "MoMo API configuration is incomplete.";
-			_logger.LogWarning("MoMo configuration validation failed. PartnerCodeSet={PartnerCodeSet}, AccessKeySet={AccessKeySet}, SecretKeySet={SecretKeySet}, MomoApiUrlSet={MomoApiUrlSet}, RedirectUrlSet={RedirectUrlSet}, IpnUrlSet={IpnUrlSet}",
-				!string.IsNullOrWhiteSpace(_momoOptions.PartnerCode),
-				!string.IsNullOrWhiteSpace(_momoOptions.AccessKey),
-				!string.IsNullOrWhiteSpace(_momoOptions.SecretKey),
-				!string.IsNullOrWhiteSpace(_momoOptions.MomoApiUrl),
-				!string.IsNullOrWhiteSpace(_momoOptions.RedirectUrl),
-				!string.IsNullOrWhiteSpace(_momoOptions.IpnUrl));
 			return false;
 		}
 

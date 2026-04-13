@@ -50,6 +50,19 @@ public class MomoController : ControllerBase
 	public async Task<IActionResult> ReceiveWebhook(CancellationToken cancellationToken)
 	{
 		var webhook = await ReadWebhookAsync();
+		return await HandleWebhookAsync(webhook, cancellationToken);
+	}
+
+	[HttpGet("webhook")]
+	[AllowAnonymous]
+	public async Task<IActionResult> ReceiveWebhookFromQuery(CancellationToken cancellationToken)
+	{
+		var webhook = MapFromValues(Request.Query);
+		return await HandleWebhookAsync(webhook, cancellationToken);
+	}
+
+	private async Task<IActionResult> HandleWebhookAsync(MomoWebhookModel webhook, CancellationToken cancellationToken)
+	{
 		_logger.LogInformation(
 			"MoMo webhook received. OrderId={OrderId}, RequestId={RequestId}, ResultCode={ResultCode}, ContentType={ContentType}, HasForm={HasForm}",
 			webhook.OrderId,
