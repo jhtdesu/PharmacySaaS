@@ -35,6 +35,10 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=pharmacy_inventory_db;Username=neondb_owner;Password=npg_47sSmnMojICa
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__User=guest
+      - RabbitMQ__Password=guest
     depends_on:
       - db
       - rabbitmq

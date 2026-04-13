@@ -14,7 +14,7 @@ public class RabbitMqMessageQueueService : IMessageQueueService
     public RabbitMqMessageQueueService(IConnectionFactory connectionFactory)
     {
         _connectionFactory = connectionFactory;
-        InitializeQueueAsync().GetAwaiter().GetResult();
+        _ = InitializeQueueAsync();
     }
 
     private async Task InitializeQueueAsync()
