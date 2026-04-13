@@ -20,7 +20,10 @@ public class CompleteSaleCommandHandler : IRequestHandler<CompleteSaleCommand, s
 
         try
         {
-            var sale = await _context.Sales.Include(s => s.Items).FirstOrDefaultAsync(s => s.Id == request.SaleId, cancellationToken);
+            var sale = await _context.Sales
+                .IgnoreQueryFilters()
+                .Include(s => s.Items)
+                .FirstOrDefaultAsync(s => s.Id == request.SaleId, cancellationToken);
 
             if (sale == null)
                 throw new Exception($"Sale with ID {request.SaleId} not found.");

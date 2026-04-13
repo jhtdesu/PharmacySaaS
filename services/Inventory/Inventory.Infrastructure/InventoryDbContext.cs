@@ -38,13 +38,14 @@ public class InventoryDbContext : DbContext, IInventoryDbContext
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        var tenantId = _tenantService?.GetCurrentTenantId();
+        Guid? tenantId = null;
 
         foreach (var entry in ChangeTracker.Entries())
         {
             if (entry.Entity is BaseData baseEntity && entry.State == EntityState.Added)
             {
-                baseEntity.TenantId = tenantId.GetValueOrDefault();
+                tenantId ??= _tenantService?.GetCurrentTenantId() ?? Guid.Empty;
+                baseEntity.TenantId = tenantId.Value;
             }
         }
 

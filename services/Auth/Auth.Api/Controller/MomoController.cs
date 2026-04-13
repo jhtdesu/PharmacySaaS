@@ -50,7 +50,7 @@ public class MomoController : ControllerBase
 	public async Task<IActionResult> ReceiveWebhook(CancellationToken cancellationToken)
 	{
 		var webhook = await ReadWebhookAsync();
-		return await HandleWebhookAsync(webhook, cancellationToken);
+		return await HandleWebhookAsync(webhook, cancellationToken, returnNoContent: true);
 	}
 
 	[HttpGet("webhook")]
@@ -58,10 +58,10 @@ public class MomoController : ControllerBase
 	public async Task<IActionResult> ReceiveWebhookFromQuery(CancellationToken cancellationToken)
 	{
 		var webhook = MapFromValues(Request.Query);
-		return await HandleWebhookAsync(webhook, cancellationToken);
+		return await HandleWebhookAsync(webhook, cancellationToken, returnNoContent: false);
 	}
 
-	private async Task<IActionResult> HandleWebhookAsync(MomoWebhookModel webhook, CancellationToken cancellationToken)
+	private async Task<IActionResult> HandleWebhookAsync(MomoWebhookModel webhook, CancellationToken cancellationToken, bool returnNoContent)
 	{
 		_logger.LogInformation(
 			"MoMo webhook received. OrderId={OrderId}, RequestId={RequestId}, ResultCode={ResultCode}, ContentType={ContentType}, HasForm={HasForm}",
@@ -80,6 +80,12 @@ public class MomoController : ControllerBase
 		_logger.LogInformation("MoMo webhook signature validated. Publishing to queue for OrderId={OrderId}, RequestId={RequestId}.", webhook.OrderId, webhook.RequestId);
 		await _messageQueueService.PublishMomoWebhookAsync(webhook, cancellationToken);
 		_logger.LogInformation("MoMo webhook published to queue for OrderId={OrderId}, RequestId={RequestId}.", webhook.OrderId, webhook.RequestId);
+
+		if (returnNoContent)
+		{
+			return NoContent();
+		}
+
 		return Ok(new BaseResponse<object>(null!, "Webhook received."));
 	}
 
