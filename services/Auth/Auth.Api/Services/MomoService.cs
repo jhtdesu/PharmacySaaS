@@ -107,23 +107,56 @@ public class MomoService : IMomoService
 			return false;
 		}
 
-		var rawSignature =
-			$"accessKey={_momoOptions.AccessKey}" +
-			$"&amount={webhook.Amount ?? 0}" +
-			$"&extraData={webhook.ExtraData ?? string.Empty}" +
-			$"&message={webhook.Message ?? string.Empty}" +
-			$"&orderId={webhook.OrderId ?? string.Empty}" +
-			$"&orderInfo={webhook.OrderInfo ?? string.Empty}" +
-			$"&orderType={webhook.OrderType ?? string.Empty}" +
-			$"&partnerCode={webhook.PartnerCode ?? string.Empty}" +
-			$"&payType={webhook.PayType ?? string.Empty}" +
-			$"&requestId={webhook.RequestId ?? string.Empty}" +
-			$"&responseTime={webhook.ResponseTime ?? 0}" +
-			$"&resultCode={webhook.ResultCode ?? -1}" +
-			$"&transId={webhook.TransId ?? 0}";
+		var providedSignature = webhook.Signature.Trim();
 
-		var expectedSignature = GenerateHmacSha256(rawSignature, _momoOptions.SecretKey!);
-		return string.Equals(expectedSignature, webhook.Signature, StringComparison.OrdinalIgnoreCase);
+		var rawSignatures = new List<string>
+		{
+			BuildWebhookRawSignature(webhook, includeAccessKey: true, includeMessage: true),
+			BuildWebhookRawSignature(webhook, includeAccessKey: false, includeMessage: true),
+			BuildWebhookRawSignature(webhook, includeAccessKey: true, includeMessage: false),
+			BuildWebhookRawSignature(webhook, includeAccessKey: false, includeMessage: false)
+		};
+
+		foreach (var rawSignature in rawSignatures)
+		{
+			var expectedSignature = GenerateHmacSha256(rawSignature, _momoOptions.SecretKey!);
+			if (string.Equals(expectedSignature, providedSignature, StringComparison.OrdinalIgnoreCase))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private string BuildWebhookRawSignature(MomoWebhookModel webhook, bool includeAccessKey, bool includeMessage)
+	{
+		var parts = new List<string>();
+
+		if (includeAccessKey)
+		{
+			parts.Add($"accessKey={_momoOptions.AccessKey}");
+		}
+
+		parts.Add($"amount={webhook.Amount ?? 0}");
+		parts.Add($"extraData={webhook.ExtraData ?? string.Empty}");
+
+		if (includeMessage)
+		{
+			parts.Add($"message={webhook.Message ?? string.Empty}");
+		}
+
+		parts.Add($"orderId={webhook.OrderId ?? string.Empty}");
+		parts.Add($"orderInfo={webhook.OrderInfo ?? string.Empty}");
+		parts.Add($"orderType={webhook.OrderType ?? string.Empty}");
+		parts.Add($"partnerCode={webhook.PartnerCode ?? string.Empty}");
+		parts.Add($"payType={webhook.PayType ?? string.Empty}");
+		parts.Add($"requestId={webhook.RequestId ?? string.Empty}");
+		parts.Add($"responseTime={webhook.ResponseTime ?? 0}");
+		parts.Add($"resultCode={webhook.ResultCode ?? -1}");
+		parts.Add($"transId={webhook.TransId ?? 0}");
+
+		return string.Join("&", parts);
 	}
 
 	private bool ValidateConfiguration(out string error)
