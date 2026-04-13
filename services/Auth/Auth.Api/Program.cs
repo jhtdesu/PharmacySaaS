@@ -78,12 +78,13 @@ var connectionFactory = new ConnectionFactory
 
 builder.Services.AddSingleton<IConnectionFactory>(connectionFactory);
 
+builder.Services.AddScoped<IMessageQueueService, RabbitMqMessageQueueService>();
+builder.Services.AddHostedService<MomoPaymentWorkerService>();
+
 builder.Services.AddControllers();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddScoped<IMomoService, MomoService>();
-builder.Services.AddScoped<IMessageQueueService, RabbitMqMessageQueueService>();
-builder.Services.AddHostedService<MomoWebhookConsumerWorker>();
 builder.Services.AddHttpClient();
 builder.Services.Configure<MomoOptions>(builder.Configuration.GetSection("MomoAPI"));
 builder.Services.AddEndpointsApiExplorer();

@@ -1,67 +1,57 @@
+using System.Text.Json;
+using Auth.Api.Models;
 using RabbitMQ.Client;
-using Newtonsoft.Json;
-using System.Text;
 
 namespace Auth.Api.Services;
 
 public class RabbitMqMessageQueueService : IMessageQueueService
 {
     private readonly IConnectionFactory _connectionFactory;
-    private const string MomoWebhookExchange = "momo.events";
-    private const string MomoWebhookQueue = "momo.webhook.queue";
-    private const string MomoWebhookRoutingKey = "momo.webhook.received";
+    private readonly string _queueName = "momo_payments";
 
     public RabbitMqMessageQueueService(IConnectionFactory connectionFactory)
     {
         _connectionFactory = connectionFactory;
-        _ = InitializeQueueAsync();
     }
 
-    private async Task InitializeQueueAsync()
+    public async Task PublishPaymentSuccessAsync(MomoPaymentMessage message)
     {
-        await using var connection = await _connectionFactory.CreateConnectionAsync();
-        await using var channel = await connection.CreateChannelAsync();
-            
-        await channel.ExchangeDeclareAsync(
-            exchange: MomoWebhookExchange,
-            type: ExchangeType.Direct,
-            durable: true,
-            autoDelete: false);
+        using var connection = await _connectionFactory.CreateConnectionAsync();
+        using var channel = await connection.CreateChannelAsync();
 
-        await channel.QueueDeclareAsync(
-            queue: MomoWebhookQueue,
-            durable: true,
-            exclusive: false,
-            autoDelete: false,
-            arguments: null);
+        await channel.QueueDeclareAsync(queue: _queueName, durable: true, exclusive: false, autoDelete: false);
 
-        await channel.QueueBindAsync(
-            queue: MomoWebhookQueue,
-            exchange: MomoWebhookExchange,
-            routingKey: MomoWebhookRoutingKey);
+        var json = JsonSerializer.Serialize(message);
+        var body = System.Text.Encoding.UTF8.GetBytes(json);
+
+        await channel.BasicPublishAsync(exchange: string.Empty, routingKey: _queueName, body: body);
     }
 
-    public async Task PublishMomoWebhookAsync(object message, CancellationToken cancellationToken = default)
+    public async Task<MomoPaymentMessage?> ConsumePaymentSuccessAsync(CancellationToken cancellationToken)
     {
-        await using var connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
-        await using var channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken);
-            
-        var json = JsonConvert.SerializeObject(message);
-        var body = Encoding.UTF8.GetBytes(json);
-
-        var properties = new BasicProperties
+        try
         {
-            Persistent = true,
-            ContentType = "application/json",
-            Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds())
-        };
+            using var connection = await _connectionFactory.CreateConnectionAsync();
+            using var channel = await connection.CreateChannelAsync();
 
-        await channel.BasicPublishAsync(
-            exchange: MomoWebhookExchange,
-            routingKey: MomoWebhookRoutingKey,
-            mandatory: false,
-            basicProperties: properties,
-            body: body,
-            cancellationToken: cancellationToken);
+            await channel.QueueDeclareAsync(queue: _queueName, durable: true, exclusive: false, autoDelete: false);
+            await channel.BasicQosAsync(prefetchSize: 0, prefetchCount: 1, global: false);
+
+            var result = await channel.BasicGetAsync(queue: _queueName, autoAck: false);
+
+            if (result == null)
+                return null;
+
+            var json = System.Text.Encoding.UTF8.GetString(result.Body.ToArray());
+            var message = JsonSerializer.Deserialize<MomoPaymentMessage>(json);
+
+            await channel.BasicAckAsync(result.DeliveryTag, false);
+
+            return message;
+        }
+        catch
+        {
+            return null;
+        }
     }
 }
