@@ -12,13 +12,16 @@ public class MomoController : ControllerBase
 {
 	private readonly IMomoService _momoService;
 	private readonly IMomoWebhookService _momoWebhookService;
+	private readonly ILogger<MomoController> _logger;
 
 	public MomoController(
 		IMomoService momoService,
-		IMomoWebhookService momoWebhookService)
+		IMomoWebhookService momoWebhookService,
+		ILogger<MomoController> logger)
 	{
 		_momoService = momoService;
 		_momoWebhookService = momoWebhookService;
+		_logger = logger;
 	}
 
 	[HttpPost]
@@ -43,11 +46,24 @@ public class MomoController : ControllerBase
 	{
 		try
 		{
+			_logger.LogError(
+				"MoMo IPN received. OrderId: {OrderId}, ResultCode: {ResultCode}, TransId: {TransId}, RequestId: {RequestId}",
+				notification.OrderId,
+				notification.ResultCode,
+				notification.TransId,
+				notification.RequestId);
+
 			await _momoWebhookService.HandleAsync(notification, cancellationToken);
 			return NoContent();
 		}
 		catch (Exception ex)
 		{
+			_logger.LogError(
+				ex,
+				"MoMo IPN handling failed. OrderId: {OrderId}, ResultCode: {ResultCode}",
+				notification.OrderId,
+				notification.ResultCode);
+
 			return BadRequest(new BaseResponse<object>(ex.Message));
 		}
 	}
