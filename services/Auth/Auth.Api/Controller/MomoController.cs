@@ -88,7 +88,7 @@ public class MomoController : ControllerBase
 			}
 			
 			await _momoWebhookService.HandleAsync(notification, cancellationToken);
-			return NoContent();
+			return Redirect("https://jhtdesu-app.tech/checkout/success");
 		}
 		catch (Exception ex)
 		{
