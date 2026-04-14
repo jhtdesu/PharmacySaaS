@@ -36,13 +36,57 @@ public class MomoController : ControllerBase
 	}
 
 	[HttpPost("webhook")]
+	[HttpGet("webhook")]
 	[AllowAnonymous]
 	public async Task<IActionResult> Webhook(
-		[FromBody] MomoIpnNotificationModel notification,
+		[FromQuery] string? partnerCode,
+		[FromQuery] string? orderId,
+		[FromQuery] string? requestId,
+		[FromQuery] long amount,
+		[FromQuery] string? orderInfo,
+		[FromQuery] string? orderType,
+		[FromQuery] long? transId,
+		[FromQuery] int resultCode,
+		[FromQuery] string? message,
+		[FromQuery] string? payType,
+		[FromQuery] long responseTime,
+		[FromQuery] string? extraData,
+		[FromQuery] string? signature,
+		[FromQuery] string? partnerUserId,
+		[FromQuery] string? storeId,
+		[FromBody] MomoIpnNotificationModel? bodyNotification,
 		CancellationToken cancellationToken)
 	{
 		try
 		{
+			MomoIpnNotificationModel notification;
+			
+			if (bodyNotification != null)
+			{
+				notification = bodyNotification;
+			}
+			else
+			{
+				notification = new MomoIpnNotificationModel
+				{
+					PartnerCode = partnerCode,
+					OrderId = orderId,
+					RequestId = requestId,
+					Amount = amount,
+					OrderInfo = orderInfo,
+					OrderType = orderType,
+					TransId = transId,
+					ResultCode = resultCode,
+					Message = message,
+					PayType = payType,
+					ResponseTime = responseTime,
+					ExtraData = extraData,
+					Signature = signature,
+					PartnerUserId = partnerUserId,
+					StoreId = storeId
+				};
+			}
+			
 			await _momoWebhookService.HandleAsync(notification, cancellationToken);
 			return NoContent();
 		}
