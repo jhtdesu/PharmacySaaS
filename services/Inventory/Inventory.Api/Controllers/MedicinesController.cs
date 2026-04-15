@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Mvc;
 using Inventory.Application.Medicines.Queries.GetLowStock;
 using Microsoft.AspNetCore.Authorization;
 using Inventory.Application.Medicines.Checkout;
-using Inventory.Application.Sales.GetSaleById;
 
 namespace Inventory.Api.Controllers;
 
@@ -121,23 +120,6 @@ public class MedicinesController : ControllerBase
         {
             var receiptNumber = await _sender.Send(command);
             return Ok(new BaseResponse<object>(new { ReceiptNumber = receiptNumber }, "Order completed successfully."));
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new BaseResponse<object>(ex.Message));
-        }
-    }
-
-    [HttpGet("checkout/{saleId}")]
-    [AllowAnonymous]
-    public async Task<ActionResult<BaseResponse<object>>> GetCheckoutStatus(Guid saleId)
-    {
-        try
-        {
-            var result = await _sender.Send(new GetSaleByIdQuery(saleId));
-            if (result == null)
-                return NotFound(new BaseResponse<object>("Sale not found."));
-            return Ok(new BaseResponse<object>(result, "Sale retrieved."));
         }
         catch (Exception ex)
         {

@@ -30,7 +30,7 @@
 
 				try {
 					const response = await fetch(
-						`https://api.jhtdesu-app.tech/api/medicines/checkout/${orderId}`,
+						`https://api.jhtdesu-app.tech/api/sales/${orderId}`,
 						{ method: 'GET' }
 					);
 
