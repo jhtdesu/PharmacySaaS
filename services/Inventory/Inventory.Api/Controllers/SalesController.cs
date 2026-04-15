@@ -10,7 +10,6 @@ namespace Inventory.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class SalesController : ControllerBase
 {
     private readonly ISender _sender; 
@@ -21,6 +20,7 @@ public class SalesController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize]
     public async Task<ActionResult<PagedResponse<List<SaleDTO>>>> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
         var result = await _sender.Send(new GetSalesQuery(pageNumber, pageSize));
@@ -28,7 +28,6 @@ public class SalesController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    [AllowAnonymous]
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await _sender.Send(new GetSaleByIdQuery(id));

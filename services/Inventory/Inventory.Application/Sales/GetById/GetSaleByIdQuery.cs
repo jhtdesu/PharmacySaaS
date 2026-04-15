@@ -15,10 +15,7 @@ public class GetSaleByIdQueryHandler : IRequestHandler<GetSaleByIdQuery, SaleDet
 
     public async Task<SaleDetailsDTO?> Handle(GetSaleByIdQuery request, CancellationToken cancellationToken)
     {
-        var sale = await _context.Sales
-            .AsNoTracking()
-            .Include(s => s.Items)
-            .FirstOrDefaultAsync(s => s.Id == request.Id, cancellationToken);
+        var sale = await _context.Sales.AsNoTracking().Include(s => s.Items).FirstOrDefaultAsync(s => s.Id == request.Id, cancellationToken);
 
         if (sale == null) return null;
 
