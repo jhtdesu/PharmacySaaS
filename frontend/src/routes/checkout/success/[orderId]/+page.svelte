@@ -20,12 +20,42 @@
 			status = 'loading';
 			message = 'Confirming payment completion...';
 
-			// Wait a moment for the background worker to process the queue message
-			await new Promise(resolve => setTimeout(resolve, 2000));
+			// Poll for sale status with retries
+			let maxAttempts = 10;
+			let attempt = 0;
+			let saleData: any = null;
 
-			status = 'success';
-			message = 'Payment completed successfully!';
-			receiptNumber = `RCPT-${new Date().getTime().toString().slice(-10)}`;
+			while (attempt < maxAttempts && !saleData) {
+				await new Promise(resolve => setTimeout(resolve, 1000));
+
+				try {
+					const response = await fetch(
+						`https://api.jhtdesu-app.tech/api/medicines/checkout/${orderId}`,
+						{ method: 'GET' }
+					);
+
+					if (response.ok) {
+						const data = await response.json();
+						if (data.data) {
+							saleData = data.data;
+							break;
+						}
+					}
+				} catch (pollError) {
+					// Continue polling on error
+				}
+
+				attempt++;
+			}
+
+			if (saleData) {
+				status = 'success';
+				message = 'Payment completed successfully!';
+				receiptNumber = saleData.receiptNumber || `RCPT-${Date.now().toString().slice(-10)}`;
+			} else {
+				status = 'error';
+				message = 'Payment processing timed out. Please check your order status.';
+			}
 		} catch (error) {
 			status = 'error';
 			message = error instanceof Error ? error.message : 'Unable to process payment.';
