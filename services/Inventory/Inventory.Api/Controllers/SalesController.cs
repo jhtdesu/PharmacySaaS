@@ -3,8 +3,8 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Inventory.Application.DTOs.Sales;
+using Inventory.Application.Sales.GetById;
 using Inventory.Application.Sales.GetList;
-using Inventory.Application.Sales.GetSaleById;
 
 namespace Inventory.Api.Controllers;
 

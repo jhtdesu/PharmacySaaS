@@ -3,7 +3,7 @@ using Inventory.Application.DTOs.Sales;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Inventory.Application.Sales.GetSaleById;
+namespace Inventory.Application.Sales.GetById;
 
 public record GetSaleByIdQuery(Guid Id) : IRequest<SaleDetailsDTO?>;
 

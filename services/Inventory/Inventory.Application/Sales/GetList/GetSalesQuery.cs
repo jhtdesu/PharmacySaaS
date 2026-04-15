@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Inventory.Application.Common.Interfaces;
 using Shared.Contracts.Models;
 using Inventory.Application.DTOs.Sales;
+using Inventory.Domain.Entities;
 
 namespace Inventory.Application.Sales.GetList;
 
@@ -17,13 +18,7 @@ public class GetSalesQueryHandler : IRequestHandler<GetSalesQuery, PagedResponse
     {
         var totalRecords = await _context.Sales.CountAsync(ct);
 
-        var sales = await _context.Sales
-            .AsNoTracking()
-            .OrderBy(s => s.SaleDate)
-            .Skip((request.PageNumber - 1) * request.PageSize)
-            .Take(request.PageSize)
-            .Select(s => new SaleDTO(s.Id, s.ReceiptNumber, s.SaleDate, s.TotalAmount, s.ProcessedBy))
-            .ToListAsync(ct);
+        var sales = await _context.Sales.AsNoTracking().Where(s => s.SaleStatus == SaleStatus.Completed).OrderBy(s => s.SaleDate).Skip((request.PageNumber - 1) * request.PageSize).Take(request.PageSize).Select(s => new SaleDTO(s.Id, s.ReceiptNumber, s.SaleDate, s.TotalAmount, s.ProcessedBy)).ToListAsync(ct);
 
         return new PagedResponse<List<SaleDTO>>(sales, request.PageNumber, request.PageSize, totalRecords);
     }
