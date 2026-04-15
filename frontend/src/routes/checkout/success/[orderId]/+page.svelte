@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
+	import { api } from '$lib/api';
 
 	let orderId = $state('');
 	let status = $state<'loading' | 'success' | 'error'>('loading');
@@ -29,17 +30,11 @@
 				await new Promise(resolve => setTimeout(resolve, 1000));
 
 				try {
-					const response = await fetch(
-						`https://api.jhtdesu-app.tech/api/sales/${orderId}`,
-						{ method: 'GET' }
-					);
+					const response = await api.get(`/sales/${orderId}`);
 
-					if (response.ok) {
-						const data = await response.json();
-						if (data.data) {
-							saleData = data.data;
-							break;
-						}
+					if (response.data) {
+						saleData = response.data.data;
+						break;
 					}
 				} catch (pollError) {
 					// Continue polling on error
