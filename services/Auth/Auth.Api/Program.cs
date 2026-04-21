@@ -66,6 +66,7 @@ builder.Services.AddScoped<IMomoService, MomoService>();
 builder.Services.AddScoped<IMomoWebhookService, MomoWebhookService>();
 builder.Services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
 builder.Services.AddHostedService<MomoPaymentWorkerService>();
+builder.Services.AddHostedService<SubscriptionPaymentWorkerService>();
 builder.Services.AddHttpClient();
 builder.Services.AddHttpClient("InventoryApi", (serviceProvider, client) =>
 {

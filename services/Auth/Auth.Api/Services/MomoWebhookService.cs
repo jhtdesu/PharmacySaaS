@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using Auth.Api.Models;
 using Microsoft.Extensions.Options;
 
@@ -30,6 +31,25 @@ public class MomoWebhookService : IMomoWebhookService
 			return;
 		}
 
+		var (isSubscription, tenantId) = ExtractTenantIdFromExtraData(notification.ExtraData);
+		if (isSubscription && tenantId != Guid.Empty)
+		{
+			var subscriptionMessage = new SubscriptionPaymentQueueMessage
+			{
+				OrderId = notification.OrderId!,
+				TenantId = tenantId,
+				Amount = notification.Amount,
+				ResultCode = notification.ResultCode,
+				TransId = notification.TransId,
+				RequestId = notification.RequestId,
+				PartnerCode = notification.PartnerCode,
+				ReceivedAtUtc = DateTime.UtcNow
+			};
+
+			await _publisher.PublishAsync(_rabbitMqOptions.SubscriptionQueueName, subscriptionMessage, cancellationToken);
+			return;
+		}
+
 		var queueMessage = new MomoPaymentQueueMessage
 		{
 			OrderId = notification.OrderId!,
@@ -42,6 +62,36 @@ public class MomoWebhookService : IMomoWebhookService
 		};
 
 		await _publisher.PublishAsync(_rabbitMqOptions.QueueName, queueMessage, cancellationToken);
+	}
+
+	private (bool isSubscription, Guid tenantId) ExtractTenantIdFromExtraData(string? extraData)
+	{
+		if (string.IsNullOrEmpty(extraData))
+		{
+			return (false, Guid.Empty);
+		}
+
+		try
+		{
+			var decodedBytes = Convert.FromBase64String(extraData);
+			var decodedJson = Encoding.UTF8.GetString(decodedBytes);
+			var extraDataObj = JsonSerializer.Deserialize<JsonElement>(decodedJson);
+
+			if (extraDataObj.TryGetProperty("tenantId", out var tenantIdElement) &&
+				Guid.TryParse(tenantIdElement.GetString() ?? string.Empty, out var tenantId) &&
+				tenantId != Guid.Empty)
+			{
+				return (true, tenantId);
+			}
+		}
+#pragma warning disable CA1031
+		catch (Exception ex)
+		{
+			_ = ex;
+		}
+#pragma warning restore CA1031
+
+		return (false, Guid.Empty);
 	}
 
 	private void ValidateNotification(MomoIpnNotificationModel notification)

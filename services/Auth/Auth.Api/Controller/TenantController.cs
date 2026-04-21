@@ -36,4 +36,16 @@ public class TenantController : ControllerBase
 
         return Ok(response);
     }
+
+    [HttpPost("buy-subscription")]
+    public async Task<ActionResult<BaseResponse<MomoCreatePaymentResponseModel>>> BuySubscription(
+        [FromBody] SubscriptionPurchaseRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _tenantService.BuySubscriptionAsync(request, cancellationToken);
+        if (!response.Success)
+            return BadRequest(response);
+
+        return Ok(response);
+    }
 }

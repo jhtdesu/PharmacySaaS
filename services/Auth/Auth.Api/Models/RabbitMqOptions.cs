@@ -8,4 +8,5 @@ public class RabbitMqOptions
 	public string Password { get; set; } = "guest";
 	public string VirtualHost { get; set; } = "/";
 	public string QueueName { get; set; } = "momo_payments";
+	public string SubscriptionQueueName { get; set; } = "momo_subscription_payments";
 }

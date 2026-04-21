@@ -10,15 +10,18 @@ public class TenantService : ITenantService
     private readonly AuthDbContext _dbContext;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly IMomoService _momoService;
 
     public TenantService(
         AuthDbContext dbContext,
         UserManager<ApplicationUser> userManager,
-        RoleManager<IdentityRole> roleManager)
+        RoleManager<IdentityRole> roleManager,
+        IMomoService momoService)
     {
         _dbContext = dbContext;
         _userManager = userManager;
         _roleManager = roleManager;
+        _momoService = momoService;
     }
 
     public async Task<BaseResponse<RegisterTenantResponse>> RegisterTenantAsync(RegisterTenantRequest request)
@@ -107,6 +110,39 @@ public class TenantService : ITenantService
             return new BaseResponse<TenantResponse>("Tenant not found.");
 
         return new BaseResponse<TenantResponse>(MapTenantResponse(tenant), "Tenant retrieved successfully.");
+    }
+
+    public async Task<BaseResponse<MomoCreatePaymentResponseModel>> BuySubscriptionAsync(SubscriptionPurchaseRequest request, CancellationToken cancellationToken = default)
+    {
+        if (request.TenantId == Guid.Empty)
+            return new BaseResponse<MomoCreatePaymentResponseModel>("Tenant ID is required.");
+
+        if (string.IsNullOrWhiteSpace(request.FullName))
+            return new BaseResponse<MomoCreatePaymentResponseModel>("Full name is required.");
+
+        var tenant = await _dbContext.Tenants.FindAsync(new object[] { request.TenantId }, cancellationToken: cancellationToken);
+        if (tenant == null)
+            return new BaseResponse<MomoCreatePaymentResponseModel>("Tenant not found.");
+
+        if (!tenant.IsActive)
+            return new BaseResponse<MomoCreatePaymentResponseModel>("Tenant is not active.");
+
+        const decimal premiumPrice = 200000m;
+        const string subscriptionOrderInfo = "Pharmacy SaaS Premium Subscription - 1 Month";
+
+        var orderId = $"SUB-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+
+        var order = new OrderInfoModel
+        {
+            OrderId = orderId,
+            FullName = request.FullName,
+            Amount = premiumPrice,
+            OrderInfo = subscriptionOrderInfo,
+            TenantId = request.TenantId
+        };
+
+        var response = await _momoService.CreatePaymentAsync(order, cancellationToken);
+        return response;
     }
 
     private static TenantResponse MapTenantResponse(Tenant tenant)

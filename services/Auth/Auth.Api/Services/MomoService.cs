@@ -41,7 +41,7 @@ public class MomoService : IMomoService
 		var lang = string.IsNullOrWhiteSpace(_momoOptions.Lang) ? "vi" : _momoOptions.Lang!;
 		var orderInfo = string.IsNullOrWhiteSpace(order.OrderInfo) ? $"Payment for order {order.OrderId}" : order.OrderInfo!;
 
-		var extraDataJson = JsonSerializer.Serialize(new { saleId = order.OrderId, fullName = order.FullName ?? string.Empty });
+		var extraDataJson = JsonSerializer.Serialize(new { saleId = order.OrderId, fullName = order.FullName ?? string.Empty, tenantId = order.TenantId });
 		var extraData = Convert.ToBase64String(Encoding.UTF8.GetBytes(extraDataJson));
 
 		var rawSignature =
