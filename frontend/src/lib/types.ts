@@ -32,3 +32,15 @@ export interface PagedMeta {
     totalRecords: number;
     totalPages: number;
 }
+
+export interface Tenant {
+    id: string;
+    storeName: string;
+    address: string;
+    phoneNumber: string;
+    subscription: 'Free' | 'Basic' | 'Premium';
+    subscriptionExpiry: string;
+    subscriptionStatus: 'Active' | 'Trialing' | 'Canceled';
+    isActive: boolean;
+    createdAt: string;
+}

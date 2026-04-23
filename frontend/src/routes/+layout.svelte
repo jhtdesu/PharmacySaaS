@@ -17,6 +17,7 @@
 	<a class = "font-bold text-emerald-300 hover:text-emerald-500" href="/medicineBatches" class:active={page.url.pathname.startsWith('/medicineBatches')}>Batches</a>
 	<a class = "font-bold text-emerald-300 hover:text-emerald-500" href="/pos" class:active={page.url.pathname.startsWith('/pos')}>POS</a>
 	<a class = "font-bold text-emerald-300 hover:text-emerald-500" href="/lowStock" class:active={page.url.pathname.startsWith('/lowStock')}>Low Stock</a>
+	<a class = "font-bold text-emerald-300 hover:text-emerald-500" href="/subscription" class:active={page.url.pathname.startsWith('/subscription')}>Subscription</a>
 	<a class = "font-bold text-emerald-300 hover:text-emerald-500" href="/auth/login" class:active={page.url.pathname.startsWith('/auth/login')}>Login</a>
 	<a class = "font-bold text-emerald-300 hover:text-emerald-500" href="/auth/register" class:active={page.url.pathname.startsWith('/auth/register')}>Register</a>
 </header>
