@@ -9,9 +9,9 @@ builder.Services.AddReverseProxy()
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", policy => 
+    options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("https://jhtdesu-app.tech", "http://localhost:3000")
+        policy.WithOrigins("https://jhtdesu-app.tech", "http://localhost:3000", "http://localhost:5173")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
