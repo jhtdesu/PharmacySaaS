@@ -6,7 +6,9 @@ using Shared.Contracts.Models;
 
 namespace Inventory.Application.Medicines.Queries.GetLowStock;
 
-public class GetLowStockMedicinesQueryHandler : IRequestHandler<GetLowStockMedicinesQuery, PagedResponse<List<LowStockMedicineDTO>>>
+public class
+    GetLowStockMedicinesQueryHandler : IRequestHandler<GetLowStockMedicinesQuery,
+    PagedResponse<List<LowStockMedicineDTO>>>
 {
     private readonly IInventoryDbContext _context;
 
@@ -15,7 +17,8 @@ public class GetLowStockMedicinesQueryHandler : IRequestHandler<GetLowStockMedic
         _context = context;
     }
 
-    public async Task<PagedResponse<List<LowStockMedicineDTO>>> Handle(GetLowStockMedicinesQuery request, CancellationToken cancellationToken)
+    public async Task<PagedResponse<List<LowStockMedicineDTO>>> Handle(GetLowStockMedicinesQuery request,
+        CancellationToken cancellationToken)
     {
         var query = _context.Medicines.AsNoTracking()
             .Select(m => new
@@ -24,6 +27,7 @@ public class GetLowStockMedicinesQueryHandler : IRequestHandler<GetLowStockMedic
                 m.Name,
                 m.SKU,
                 m.Unit,
+                m.ImageUrl,
                 m.LowStockLevel,
                 TotalStock = m.Batches
                     .Where(b => b.CurrentQuantity > 0 && b.ExpiryDate > DateTime.UtcNow && !b.IsDeleted)
@@ -43,6 +47,7 @@ public class GetLowStockMedicinesQueryHandler : IRequestHandler<GetLowStockMedic
                 Name = m.Name,
                 SKU = m.SKU,
                 Unit = m.Unit,
+                ImageUrl = m.ImageUrl,
                 LowStockLevel = m.LowStockLevel,
                 TotalCurrentStock = m.TotalStock
             })

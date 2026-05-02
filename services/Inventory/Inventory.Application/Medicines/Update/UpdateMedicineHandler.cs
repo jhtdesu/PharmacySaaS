@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Inventory.Application.Medicines.Update;
 
-internal sealed class UpdateMedicineCommandHandler 
+internal sealed class UpdateMedicineCommandHandler
     : IRequestHandler<UpdateMedicineCommand, Guid>
 {
     private readonly IInventoryDbContext _context;
@@ -27,6 +27,7 @@ internal sealed class UpdateMedicineCommandHandler
         medicine.SKU = request.SKU;
         medicine.ActiveIngredient = request.ActiveIngredient;
         medicine.Unit = request.Unit;
+        medicine.ImageUrl = request.ImageUrl;
 
         _context.Medicines.Update(medicine);
         await _context.SaveChangesAsync(cancellationToken);

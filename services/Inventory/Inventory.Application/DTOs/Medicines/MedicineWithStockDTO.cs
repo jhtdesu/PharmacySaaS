@@ -7,7 +7,8 @@ public class MedicineWithStockDTO
     public string SKU { get; set; } = string.Empty;
     public string ActiveIngredient { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
-    
+    public string ImageUrl { get; set; } = string.Empty;
+
     public int TotalStock { get; set; }
-    public DateTime? EarliestExpiryDate { get; set; } 
+    public DateTime? EarliestExpiryDate { get; set; }
 }

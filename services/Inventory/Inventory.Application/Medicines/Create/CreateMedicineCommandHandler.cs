@@ -4,7 +4,7 @@ using MediatR;
 
 namespace Inventory.Application.Medicines.Create;
 
-internal sealed class CreateMedicineCommandHandler 
+internal sealed class CreateMedicineCommandHandler
     : IRequestHandler<CreateMedicineCommand, Guid>
 {
     private readonly IInventoryDbContext _context;
@@ -22,7 +22,8 @@ internal sealed class CreateMedicineCommandHandler
             Name = request.Name,
             SKU = request.SKU,
             ActiveIngredient = request.ActiveIngredient,
-            Unit = request.Unit
+            Unit = request.Unit,
+            ImageUrl = request.ImageUrl
         };
 
         _context.Medicines.Add(medicine);

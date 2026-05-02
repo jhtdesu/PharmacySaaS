@@ -8,6 +8,7 @@ public class Medicine : BaseData
     public string ActiveIngredient { get; set; } = string.Empty; 
     public string Unit { get; set; } = string.Empty; 
     public int LowStockLevel { get; set; }
+    public string ImageUrl { get; set; } = string.Empty;
 
     public List<MedicineBatch> Batches { get; private set; } = new();
 }

@@ -4,6 +4,7 @@ export interface Medicine {
     sku: string;
     activeIngredient: string;
     unit: string;
+    imageUrl: string;
 }
 
 export interface MedicineCheckout {

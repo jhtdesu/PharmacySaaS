@@ -8,4 +8,5 @@ public class LowStockMedicineDTO
     public int TotalCurrentStock { get; set; }
     public int LowStockLevel { get; set; }
     public string Unit { get; set; } = string.Empty;
+    public string ImageUrl { get; set; } = string.Empty;
 }

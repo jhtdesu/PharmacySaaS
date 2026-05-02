@@ -19,7 +19,7 @@ namespace Inventory.Api.Controllers;
 [Authorize]
 public class MedicinesController : ControllerBase
 {
-    private readonly ISender _sender; 
+    private readonly ISender _sender;
 
     public MedicinesController(ISender sender)
     {
@@ -37,13 +37,14 @@ public class MedicinesController : ControllerBase
     public async Task<ActionResult<BaseResponse<MedicineDTO>>> GetById(Guid id)
     {
         var result = await _sender.Send(new GetMedicineByIdQuery(id));
-        if (result == null) 
+        if (result == null)
             return NotFound(new BaseResponse<MedicineDTO>("Medicine not found."));
         return Ok(new BaseResponse<MedicineDTO>(result, "Medicine retrieved successfully."));
     }
 
     [HttpGet]
-    public async Task<ActionResult<PagedResponse<List<MedicineDTO>>>> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    public async Task<ActionResult<PagedResponse<List<MedicineDTO>>>> GetAll([FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
     {
         var result = await _sender.Send(new GetMedicinesQuery(pageNumber, pageSize));
         return Ok(result);
@@ -57,7 +58,8 @@ public class MedicinesController : ControllerBase
             request.Name,
             request.SKU,
             request.ActiveIngredient,
-            request.Unit
+            request.Unit,
+            request.ImageUrl
         );
 
         var result = await _sender.Send(command);
@@ -68,7 +70,7 @@ public class MedicinesController : ControllerBase
     public async Task<ActionResult<BaseResponse<object>>> Delete(Guid id)
     {
         var result = await _sender.Send(new DeleteMedicineCommand(id));
-        if (!result) 
+        if (!result)
             return NotFound(new BaseResponse<object>("Medicine not found."));
         return Ok(new BaseResponse<object>(null!, "Medicine deleted successfully."));
     }
@@ -81,25 +83,28 @@ public class MedicinesController : ControllerBase
     }
 
     [HttpGet("with-stock")]
-    public async Task<ActionResult<PagedResponse<List<MedicineWithStockDTO>>>> GetList([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    public async Task<ActionResult<PagedResponse<List<MedicineWithStockDTO>>>> GetList([FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
     {
         var query = new GetMedicinesWithStockQuery(pageNumber, pageSize);
         var result = await _sender.Send(query);
-        
+
         return Ok(result);
     }
 
     [HttpGet("low-stock")]
-    public async Task<ActionResult<PagedResponse<List<LowStockMedicineDTO>>>> GetLowStockMedicines([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    public async Task<ActionResult<PagedResponse<List<LowStockMedicineDTO>>>> GetLowStockMedicines(
+        [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
         var query = new GetLowStockMedicinesQuery(pageNumber, pageSize);
         var result = await _sender.Send(query);
-        
+
         return Ok(result);
     }
 
     [HttpPost("checkout")]
-    public async Task<ActionResult<BaseResponse<CreatePendingSaleResponseDTO>>> Checkout([FromBody] CreatePendingSaleCommand command)
+    public async Task<ActionResult<BaseResponse<CreatePendingSaleResponseDTO>>> Checkout(
+        [FromBody] CreatePendingSaleCommand command)
     {
         try
         {

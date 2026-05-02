@@ -17,7 +17,7 @@ public class GetMedicineByIdQueryHandler : IRequestHandler<GetMedicineByIdQuery,
         return await _context.Medicines
             .AsNoTracking()
             .Where(m => m.Id == request.Id && !m.IsDeleted)
-            .Select(m => new MedicineDTO(m.Id, m.Name, m.SKU, m.ActiveIngredient, m.Unit))
+            .Select(m => new MedicineDTO(m.Id, m.Name, m.SKU, m.ActiveIngredient, m.Unit, m.ImageUrl))
             .FirstOrDefaultAsync(ct);
     }
 }

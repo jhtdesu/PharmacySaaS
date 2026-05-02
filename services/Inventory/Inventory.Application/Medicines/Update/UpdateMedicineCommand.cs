@@ -7,5 +7,6 @@ public record UpdateMedicineCommand(
     string Name,
     string SKU,
     string ActiveIngredient,
-    string Unit
+    string Unit,
+    string ImageUrl
 ) : IRequest<Guid>;

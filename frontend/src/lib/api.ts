@@ -17,9 +17,17 @@ export const authApi = axios.create({
     }
 });
 
+authApi.interceptors.request.use((config) => {
+    const token = localStorage.getItem('jwt_token');
+    if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('jwt_token');
-    
+
     if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -34,8 +42,8 @@ api.interceptors.response.use(
         const originalRequest = error.config;
 
         if (error.response?.status === 401 && !originalRequest._retry) {
-            
-            originalRequest._retry = true; 
+
+            originalRequest._retry = true;
 
             try {
                 const refreshToken = localStorage.getItem('refresh_token');
@@ -63,7 +71,7 @@ api.interceptors.response.use(
                 console.error("Session expired. Please log in again.", refreshError);
                 localStorage.removeItem('jwt_token');
                 localStorage.removeItem('refresh_token');
-                
+
                 return Promise.reject(refreshError);
             }
         }

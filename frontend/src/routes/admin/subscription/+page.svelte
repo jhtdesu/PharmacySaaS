@@ -43,7 +43,7 @@
 		successMessage = '';
 
 		try {
-			const userName = localStorage.getItem('user_name') || 'Customer';
+			const userName = localStorage.getItem('user_full_name') || 'Customer';
 
 			const response = await authApi.post('/tenant/buy-subscription', {
 				tenantId,
@@ -114,72 +114,76 @@
 	}
 </script>
 
-<div class="min-h-screen bg-gray-900 text-white p-6">
-	<div class="max-w-4xl mx-auto">
-		<h1 class="text-4xl font-bold mb-8">Subscription Management</h1>
+<div class="min-h-screen bg-gray-900 p-6 text-white">
+	<div class="mx-auto max-w-4xl">
+		<h1 class="mb-8 text-4xl font-bold">Subscription Management</h1>
 
 		{#if isLoading}
-			<div class="text-center py-12">
+			<div class="py-12 text-center">
 				<p class="text-gray-400">Loading subscription information...</p>
 			</div>
 		{:else if errorMessage}
-			<div class="bg-red-900 border border-red-700 rounded-lg p-4 mb-6">
+			<div class="mb-6 rounded-lg border border-red-700 bg-red-900 p-4">
 				<p class="text-red-200">{errorMessage}</p>
 			</div>
 		{/if}
 
 		{#if tenant}
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+			<div class="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
 				<!-- Current Subscription Info -->
-				<div class="bg-gray-800 rounded-lg border border-gray-700 p-6">
-					<h2 class="text-2xl font-bold mb-4">Current Subscription</h2>
+				<div class="rounded-lg border border-gray-700 bg-gray-800 p-6">
+					<h2 class="mb-4 text-2xl font-bold">Current Subscription</h2>
 
 					<div class="space-y-4">
 						<div>
-							<p class="text-gray-400 text-sm mb-1">Store Name</p>
+							<p class="mb-1 text-sm text-gray-400">Store Name</p>
 							<p class="text-lg font-semibold">{tenant.storeName}</p>
 						</div>
 
 						<div>
-							<p class="text-gray-400 text-sm mb-1">Subscription Plan</p>
-							<span class={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${getSubscriptionBadgeColor(tenant.subscription)}`}>
+							<p class="mb-1 text-sm text-gray-400">Subscription Plan</p>
+							<span
+								class={`inline-block rounded-full px-3 py-1 text-sm font-semibold ${getSubscriptionBadgeColor(tenant.subscription)}`}
+							>
 								{tenant.subscription}
 							</span>
 						</div>
 
 						<div>
-							<p class="text-gray-400 text-sm mb-1">Status</p>
-							<span class={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${getStatusBadgeColor(tenant.subscriptionStatus)}`}>
+							<p class="mb-1 text-sm text-gray-400">Status</p>
+							<span
+								class={`inline-block rounded-full px-3 py-1 text-sm font-semibold ${getStatusBadgeColor(tenant.subscriptionStatus)}`}
+							>
 								{tenant.subscriptionStatus}
 							</span>
 						</div>
 
 						<div>
-							<p class="text-gray-400 text-sm mb-1">Expiry Date</p>
+							<p class="mb-1 text-sm text-gray-400">Expiry Date</p>
 							<p class="text-lg font-semibold">
 								{formatDate(tenant.subscriptionExpiry)}
 							</p>
 							{#if isSubscriptionExpired()}
-								<p class="text-red-400 text-sm mt-1">⚠️ Subscription expired</p>
+								<p class="mt-1 text-sm text-red-400">⚠️ Subscription expired</p>
 							{:else}
-								<p class="text-green-400 text-sm mt-1">✓ {getDaysUntilExpiry()} days remaining</p>
+								<p class="mt-1 text-sm text-green-400">✓ {getDaysUntilExpiry()} days remaining</p>
 							{/if}
 						</div>
 					</div>
 				</div>
 
 				<!-- Subscription Plans -->
-				<div class="bg-gray-800 rounded-lg border border-gray-700 p-6">
-					<h2 class="text-2xl font-bold mb-4">Available Plans</h2>
+				<div class="rounded-lg border border-gray-700 bg-gray-800 p-6">
+					<h2 class="mb-4 text-2xl font-bold">Available Plans</h2>
 
 					<div class="space-y-4">
-						<div class="bg-gray-700 rounded-lg p-4 border border-yellow-600">
-							<div class="flex justify-between items-start mb-2">
+						<div class="rounded-lg border border-yellow-600 bg-gray-700 p-4">
+							<div class="mb-2 flex items-start justify-between">
 								<h3 class="text-xl font-bold text-yellow-400">Premium Plan</h3>
 								<span class="text-2xl font-bold">500,000₫</span>
 							</div>
-							<p class="text-gray-300 text-sm mb-3">Per month</p>
-							<ul class="text-gray-300 text-sm space-y-2 mb-4">
+							<p class="mb-3 text-sm text-gray-300">Per month</p>
+							<ul class="mb-4 space-y-2 text-sm text-gray-300">
 								<li>✓ Full access to all features</li>
 								<li>✓ Unlimited medicines</li>
 								<li>✓ Advanced reporting</li>
@@ -188,10 +192,10 @@
 							<button
 								onclick={buySubscription}
 								disabled={isProcessing}
-								class={`w-full py-2 px-4 rounded-lg font-semibold transition ${
+								class={`w-full rounded-lg px-4 py-2 font-semibold transition ${
 									isProcessing
-										? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-										: 'bg-yellow-600 hover:bg-yellow-700 text-white'
+										? 'cursor-not-allowed bg-gray-600 text-gray-400'
+										: 'bg-yellow-600 text-white hover:bg-yellow-700'
 								}`}
 							>
 								{isProcessing ? 'Processing...' : 'Upgrade to Premium'}
@@ -202,41 +206,43 @@
 			</div>
 
 			{#if successMessage}
-				<div class="bg-green-900 border border-green-700 rounded-lg p-4">
+				<div class="rounded-lg border border-green-700 bg-green-900 p-4">
 					<p class="text-green-200">{successMessage}</p>
 				</div>
 			{/if}
 
 			<!-- Store Details -->
-			<div class="bg-gray-800 rounded-lg border border-gray-700 p-6">
-				<h2 class="text-2xl font-bold mb-4">Store Information</h2>
+			<div class="rounded-lg border border-gray-700 bg-gray-800 p-6">
+				<h2 class="mb-4 text-2xl font-bold">Store Information</h2>
 
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+				<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 					<div>
-						<p class="text-gray-400 text-sm mb-1">Phone Number</p>
+						<p class="mb-1 text-sm text-gray-400">Phone Number</p>
 						<p class="text-lg font-semibold">{tenant.phoneNumber}</p>
 					</div>
 
 					<div>
-						<p class="text-gray-400 text-sm mb-1">Address</p>
+						<p class="mb-1 text-sm text-gray-400">Address</p>
 						<p class="text-lg font-semibold">{tenant.address}</p>
 					</div>
 
 					<div>
-						<p class="text-gray-400 text-sm mb-1">Account Created</p>
+						<p class="mb-1 text-sm text-gray-400">Account Created</p>
 						<p class="text-lg font-semibold">{formatDate(tenant.createdAt)}</p>
 					</div>
 
 					<div>
-						<p class="text-gray-400 text-sm mb-1">Status</p>
-						<p class={`text-lg font-semibold ${tenant.isActive ? 'text-green-400' : 'text-red-400'}`}>
+						<p class="mb-1 text-sm text-gray-400">Status</p>
+						<p
+							class={`text-lg font-semibold ${tenant.isActive ? 'text-green-400' : 'text-red-400'}`}
+						>
 							{tenant.isActive ? 'Active' : 'Inactive'}
 						</p>
 					</div>
 				</div>
 			</div>
 		{:else if !isLoading}
-			<div class="bg-yellow-900 border border-yellow-700 rounded-lg p-4">
+			<div class="rounded-lg border border-yellow-700 bg-yellow-900 p-4">
 				<p class="text-yellow-200">Unable to load tenant information.</p>
 			</div>
 		{/if}
